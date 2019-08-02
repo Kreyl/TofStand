@@ -5,6 +5,7 @@
  *      Author: Kreyl
  */
 
+#include "hal.h"
 #include "usb_cdc.h"
 #include "hal_usb.h"
 #include "descriptors_cdc.h"
@@ -139,9 +140,9 @@ void UsbCDC_t::SignalCmdProcessed() {
 #endif
 
 void UsbCDC_t::Init() {
-#ifdef STM32L4XX
-    PinSetupAlterFunc(USB_GPIO, USB_DM, omPushPull, pudNone, USB_AF, psVeryHigh);
-    PinSetupAlterFunc(USB_GPIO, USB_DP, omPushPull, pudNone, USB_AF, psVeryHigh);
+#if defined STM32L4XX || defined STM32F2XX
+    PinSetupAlterFunc(USB_DM, omPushPull, pudNone, USB_AF, psHigh);
+    PinSetupAlterFunc(USB_DP, omPushPull, pudNone, USB_AF, psHigh);
 #else
     PinSetupAnalog(USB_DM);
     PinSetupAnalog(USB_DP);

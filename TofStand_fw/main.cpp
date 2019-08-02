@@ -35,7 +35,7 @@ int main() {
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-//    UsbCDC.Init();
+    UsbCDC.Init();
     PinSetupInput(USB_DETECT_PIN, pudPullDown); // Usb detect pin
 
     TmrOneSecond.StartOrRestart();
@@ -92,11 +92,6 @@ void ITask() {
         } // switch
     } // while true
 }
-
-//void ProcessUsbDetect(PinSnsState_t *PState, uint32_t Len) {
-//    if(*PState == pssRising) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbConnect));
-//    else if(*PState == pssFalling) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbDisconnect));
-//}
 
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
