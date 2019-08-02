@@ -17,10 +17,13 @@ static void OnCmd(Shell_t *PShell);
 static bool UsbPinWasHi = false;
 static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
+enum Direction_t {dirUp, dirDown};
+#define SPD_MAX     100
+void Move(Direction_t ADir, uint32_t ASpeed);
+void Stop();
 #endif
 
 int main() {
-#if 1 // Low level init
     // ==== Setup clock ====
     Clk.SetCoreClk(cclk48MHz);
     Clk.UpdateFreqValues();
@@ -40,7 +43,6 @@ int main() {
 
     TmrOneSecond.StartOrRestart();
 
-#endif
 
     // ==== Main cycle ====
     ITask();
@@ -93,6 +95,14 @@ void ITask() {
     } // while true
 }
 
+void Move(Direction_t ADir, uint32_t ASpeed) {
+
+}
+
+void Stop() {
+
+}
+
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
     Cmd_t *PCmd = &PShell->Cmd;
@@ -102,14 +112,33 @@ void OnCmd(Shell_t *PShell) {
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
-    else if(PCmd->NameIs("Start")) {
-        uint8_t Slot;
-        uint16_t Volume;
-        char *S;
-        if(PCmd->GetNext<uint8_t>(&Slot) != retvOk)    { PShell->Ack(retvCmdError); return; }
-        if(PCmd->GetNext<uint16_t>(&Volume) != retvOk) { PShell->Ack(retvCmdError); return; }
-        if(PCmd->GetNextString(&S) != retvOk) { PShell->Ack(retvCmdError); return; }
+    else if(PCmd->NameIs("Home")) {
+        Move(dirDown, SPD_MAX);
+        PShell->Ack(retvOk);
     }
+
+    else if(PCmd->NameIs("Down")) {
+        uint32_t ISpd = 0;
+        if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
+        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
+        Move(dirDown, ISpd);
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("Up")) {
+        uint32_t ISpd = 0;
+        if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
+        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
+        Move(dirUp, ISpd);
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("Stop")) {
+       Stop();
+       PShell->Ack(retvOk);
+   }
 
     else PShell->Ack(retvCmdUnknown);
 }
