@@ -20,6 +20,10 @@ static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 L6470_t Motor{M_SPI};
 #define SPD_MAX     2700000
+
+void EndstopHandler();
+PinIrq_t EndstopTop{ENDSTOP1, pudPullDown, EndstopHandler};
+PinIrq_t EndstopBottom{ENDSTOP2, pudPullDown, EndstopHandler};
 #endif
 
 int main() {
@@ -43,11 +47,13 @@ int main() {
     // Motor
     Motor.Init();
     Motor.SetAcceleration(120);
-    Motor.SetDeceleration(120);
-    Motor.SetMaxSpeed(SPD_MAX);
-    //        SetStepMode(smFull);
+    Motor.SetDeceleration(1200);
     Motor.SetStepMode(sm128);
-    //Motor.SetConfig(0x2EA8);  // Default 2E88; voltage compensation enabled
+
+    // Endstops
+    EndstopTop.Init(ttRising);
+    EndstopBottom.Init(ttRising);
+    EndstopTop.EnableIrq(IRQ_PRIO_MEDIUM);
 
     TmrOneSecond.StartOrRestart();
 
@@ -79,9 +85,9 @@ void ITask() {
                 }
                 break;
 
-//            case evtIdAdcRslt:
-////                Printf("Adc: %u; ExtPwr: %u; Charging: %u\r", Msg.Value, Power.ExternalPwrOn(), Power.IsCharging());
-//                break;
+            case evtIdEndstop:
+                PrintfI("Endstop\r");
+                break;
 
 #if 1 // ======= USB =======
             case evtIdUsbConnect:
@@ -102,6 +108,12 @@ void ITask() {
     } // while true
 }
 
+void EndstopHandler() {
+    Motor.StopSoftAndHiZ();
+    PrintfI("EndstopHandler\r");
+    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstop));
+}
+
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
     Cmd_t *PCmd = &PShell->Cmd;
@@ -117,6 +129,8 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("Down")) {
+        // Check if bottom endstop reched
+        if(EndstopBottom.IsHi()) { PShell->Ack(retvBadState); return; }
         uint32_t ISpd = 0;
         if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
@@ -126,6 +140,8 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("Up")) {
+        // Check if top endstop reched
+        if(EndstopTop.IsHi()) { PShell->Ack(retvBadState); return; }
         uint32_t ISpd = 0;
         if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }

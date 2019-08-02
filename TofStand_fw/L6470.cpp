@@ -28,6 +28,7 @@ void L6470_t::Init() {
     chThdSleepMilliseconds(7);
     ResetOff();
     chThdSleepMilliseconds(27);
+    SetParam16(L6470_REG_MAX_SPEED, 0x3FF); // Top speed possible
     uint16_t tmp = GetStatus();
     Printf("\rStatus: %X\r", tmp);
 }
@@ -37,7 +38,9 @@ void L6470_t::Run(Dir_t Dir, uint32_t Speed) {
     uint8_t b = 0;
     switch(Dir) {
         case dirStop:
+            chSysLock();
             StopSoftAndHiZ();
+            chSysUnlock();
             return;
         case dirForward:
             b = 1;
@@ -48,6 +51,7 @@ void L6470_t::Run(Dir_t Dir, uint32_t Speed) {
     }
     Convert::DWordBytes_t dwb;
     dwb.DWord = Speed;
+    chSysLock();
     CsLo();
     ISpi.ReadWriteByte(0b01010000 | b);
     CSHiLo();
@@ -57,6 +61,7 @@ void L6470_t::Run(Dir_t Dir, uint32_t Speed) {
     CSHiLo();
     ISpi.ReadWriteByte(dwb.b[0]);
     CsHi();
+    chSysUnlock();
 }
 
 #endif

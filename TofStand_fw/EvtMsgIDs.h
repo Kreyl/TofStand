@@ -14,9 +14,6 @@ enum EvtMsgId_t {
     evtIdShellCmd,
     evtIdEverySecond,
 
-    // Audio
-    evtIdSoundFileEnd,
-
     // Usb
     evtIdUsbConnect,
     evtIdUsbDisconnect,
@@ -24,15 +21,5 @@ enum EvtMsgId_t {
     evtIdUsbInDone,
     evtIdUsbOutDone,
 
-    // Buttons
-    evtIdButtons,
-
-    // App specific
-    evtIdAdcRslt,
-    // Pill
-    evtIdPillConnected,
-    evtIdPillDisconnected,
-    // Radio
-    evtIdNewRPkt,
-
+    evtIdEndstop,
 };

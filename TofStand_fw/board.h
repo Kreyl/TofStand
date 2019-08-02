@@ -47,6 +47,10 @@
 #define USB_AF          AF10
 #define BOARD_OTG_NOVBUSSENS    TRUE
 
+// Endstops
+#define ENDSTOP1        GPIOC, 11
+#define ENDSTOP2        GPIOC, 12
+
 #if 1 // ==== L6470 ====
 #define M_SPI           SPI1
 #define M_SPI_GPIO      GPIOA
