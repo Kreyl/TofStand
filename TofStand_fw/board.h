@@ -47,6 +47,22 @@
 #define USB_AF          AF10
 #define BOARD_OTG_NOVBUSSENS    TRUE
 
+#if 1 // ==== L6470 ====
+#define M_SPI           SPI1
+#define M_SPI_GPIO      GPIOA
+#define M_SCK           5
+#define M_MISO          6
+#define M_MOSI          7
+#define M_CS            8
+#define M_SPI_AF        AF5
+
+#define M_AUX_GPIO      GPIOC
+#define M_BUSY_SYNC1    0
+#define M_SW1           1
+#define M_FLAG1         2
+#define M_STBY_RST      6
+#endif
+
 #endif // GPIO
 
 #if I2C2_ENABLED // ====================== I2C ================================

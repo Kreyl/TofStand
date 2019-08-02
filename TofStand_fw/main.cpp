@@ -5,6 +5,7 @@
 #include "uart.h"
 #include "shell.h"
 #include "usb_cdc.h"
+#include "L6470.h"
 
 #if 1 // =============== Low level ================
 // Forever
@@ -17,10 +18,8 @@ static void OnCmd(Shell_t *PShell);
 static bool UsbPinWasHi = false;
 static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
-enum Direction_t {dirUp, dirDown};
-#define SPD_MAX     100
-void Move(Direction_t ADir, uint32_t ASpeed);
-void Stop();
+L6470_t Motor{M_SPI};
+#define SPD_MAX     2700000
 #endif
 
 int main() {
@@ -41,8 +40,16 @@ int main() {
     UsbCDC.Init();
     PinSetupInput(USB_DETECT_PIN, pudPullDown); // Usb detect pin
 
-    TmrOneSecond.StartOrRestart();
+    // Motor
+    Motor.Init();
+    Motor.SetAcceleration(120);
+    Motor.SetDeceleration(120);
+    Motor.SetMaxSpeed(SPD_MAX);
+    //        SetStepMode(smFull);
+    Motor.SetStepMode(sm128);
+    //Motor.SetConfig(0x2EA8);  // Default 2E88; voltage compensation enabled
 
+    TmrOneSecond.StartOrRestart();
 
     // ==== Main cycle ====
     ITask();
@@ -95,14 +102,6 @@ void ITask() {
     } // while true
 }
 
-void Move(Direction_t ADir, uint32_t ASpeed) {
-
-}
-
-void Stop() {
-
-}
-
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
     Cmd_t *PCmd = &PShell->Cmd;
@@ -113,7 +112,7 @@ void OnCmd(Shell_t *PShell) {
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
     else if(PCmd->NameIs("Home")) {
-        Move(dirDown, SPD_MAX);
+        Motor.Run(dirForward, SPD_MAX);
         PShell->Ack(retvOk);
     }
 
@@ -122,7 +121,7 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Move(dirDown, ISpd);
+        Motor.Run(dirForward, ISpd);
         PShell->Ack(retvOk);
     }
 
@@ -131,14 +130,14 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Move(dirUp, ISpd);
+        Motor.Run(dirReverse, ISpd);
         PShell->Ack(retvOk);
     }
 
     else if(PCmd->NameIs("Stop")) {
-       Stop();
-       PShell->Ack(retvOk);
-   }
+        Motor.StopSoftAndHiZ();
+        PShell->Ack(retvOk);
+    }
 
     else PShell->Ack(retvCmdUnknown);
 }
