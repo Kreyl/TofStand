@@ -40,14 +40,12 @@
 #define UART_TX_PIN     6
 #define UART_RX_PIN     7
 
-// Usb detect & charging
-#define USB_DETECT_PIN  GPIOA, 9
-#define IS_CHARGING_PIN GPIOC, 3
-
 // USB
+#define USB_DETECT_PIN  GPIOA, 9
 #define USB_DM          GPIOA, 11
 #define USB_DP          GPIOA, 12
 #define USB_AF          AF10
+#define BOARD_OTG_NOVBUSSENS    TRUE
 
 #endif // GPIO
 

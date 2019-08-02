@@ -4,7 +4,7 @@
 #include "Sequences.h"
 #include "uart.h"
 #include "shell.h"
-
+#include "usb_cdc.h"
 
 #if 1 // =============== Low level ================
 // Forever
@@ -14,7 +14,8 @@ CmdUart_t Uart{&CmdUartParams};
 static void ITask();
 static void OnCmd(Shell_t *PShell);
 
-//static TmrKL_t TmrOneSecond {MS2ST(999), evtIdEverySecond, tktPeriodic};
+static bool UsbPinWasHi = false;
+static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 #endif
 
@@ -34,10 +35,10 @@ int main() {
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-//    SimpleSensors::Init();
-//    UsbMsdCdc.Init();
+//    UsbCDC.Init();
+    PinSetupInput(USB_DETECT_PIN, pudPullDown); // Usb detect pin
 
-//    TmrOneSecond.StartOrRestart();
+    TmrOneSecond.StartOrRestart();
 
 #endif
 
@@ -58,31 +59,29 @@ void ITask() {
 
             case evtIdEverySecond:
 //                Printf("Second\r");
+                // Check if USB connected/disconnected
+                if(PinIsHi(USB_DETECT_PIN) and !UsbPinWasHi) {
+                    UsbPinWasHi = true;
+                    EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbConnect));
+                }
+                else if(!PinIsHi(USB_DETECT_PIN) and UsbPinWasHi) {
+                    UsbPinWasHi = false;
+                    EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbDisconnect));
+                }
                 break;
 
-            case evtIdAdcRslt:
-//                Printf("Adc: %u; ExtPwr: %u; Charging: %u\r", Msg.Value, Power.ExternalPwrOn(), Power.IsCharging());
-                break;
+//            case evtIdAdcRslt:
+////                Printf("Adc: %u; ExtPwr: %u; Charging: %u\r", Msg.Value, Power.ExternalPwrOn(), Power.IsCharging());
+//                break;
 
-#if 0 // ======= USB =======
+#if 1 // ======= USB =======
             case evtIdUsbConnect:
                 Printf("USB connect\r");
-                Clk.SetupFlashLatency(48);
-                Clk.SetupBusDividers(ahbDiv1, apbDiv2, apbDiv2); // 48 MHz AHB, 24 MHz APB1, 24 MHz APB2
-                Clk.UpdateFreqValues();
-                Uart.OnClkChange();
-                Clk.PrintFreqs();
-                chThdSleepMilliseconds(270);
-                UsbMsdCdc.Connect();
+                UsbCDC.Connect();
                 break;
             case evtIdUsbDisconnect:
-                UsbMsdCdc.Disconnect();
-                Clk.SetupBusDividers(ahbDiv2, apbDiv1, apbDiv1); // 24 MHz AHB, 24 MHz APB1, 24 MHz APB2
-                Clk.UpdateFreqValues();
-                Clk.SetupFlashLatency(Clk.AHBFreqHz/1000000);
-                Uart.OnClkChange();
+                UsbCDC.Disconnect();
                 Printf("USB disconnect\r");
-                Clk.PrintFreqs();
                 break;
             case evtIdUsbReady:
                 Printf("USB ready\r");
