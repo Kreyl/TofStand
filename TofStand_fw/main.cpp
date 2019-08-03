@@ -19,11 +19,11 @@ static bool UsbPinWasHi = false;
 static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 L6470_t Motor{M_SPI};
-#define SPD_MAX     2700000
+#define SPD_MAX     72000
 
 void EndstopHandler();
-PinIrq_t EndstopTop{ENDSTOP1, pudPullDown, EndstopHandler};
-PinIrq_t EndstopBottom{ENDSTOP2, pudPullDown, EndstopHandler};
+PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
+PinIrq_t EndstopBottom{ENDSTOP1, pudPullDown, EndstopHandler};
 #endif
 
 int main() {
@@ -47,7 +47,7 @@ int main() {
     // Motor
     Motor.Init();
     Motor.SetAcceleration(120);
-    Motor.SetDeceleration(1200);
+    Motor.SetDeceleration(12000);
     Motor.SetStepMode(sm128);
 
     // Endstops
@@ -110,7 +110,7 @@ void ITask() {
 
 void EndstopHandler() {
     Motor.StopSoftAndHiZ();
-    PrintfI("EndstopHandler\r");
+//    PrintfI("EndstopHandler\r");
     EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstop));
 }
 
@@ -124,7 +124,7 @@ void OnCmd(Shell_t *PShell) {
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
     else if(PCmd->NameIs("Home")) {
-        Motor.Run(dirForward, SPD_MAX);
+        Motor.Run(dirReverse, SPD_MAX);
         PShell->Ack(retvOk);
     }
 
@@ -135,7 +135,7 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Motor.Run(dirForward, ISpd);
+        Motor.Run(dirReverse, ISpd);
         PShell->Ack(retvOk);
     }
 
@@ -146,7 +146,7 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Motor.Run(dirReverse, ISpd);
+        Motor.Run(dirForward, ISpd);
         PShell->Ack(retvOk);
     }
 
