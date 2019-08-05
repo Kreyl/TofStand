@@ -87,6 +87,7 @@ void ITask() {
 
             case evtIdEndstop:
                 PrintfI("Endstop\r");
+                if(UsbCDC.IsActive()) UsbCDC.Print("Endstop\r\n");
                 break;
 
 #if 1 // ======= USB =======
@@ -109,7 +110,7 @@ void ITask() {
 }
 
 void EndstopHandler() {
-    Motor.StopSoftAndHiZ();
+    Motor.StopSoftAndHold();
 //    PrintfI("EndstopHandler\r");
     EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstop));
 }
@@ -151,7 +152,7 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("Stop")) {
-        Motor.StopSoftAndHiZ();
+        Motor.StopSoftAndHold();
         PShell->Ack(retvOk);
     }
 
