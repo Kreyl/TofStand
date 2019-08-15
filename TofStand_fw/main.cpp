@@ -55,6 +55,9 @@ int main() {
     EndstopBottom.Init(ttRising);
     EndstopTop.EnableIrq(IRQ_PRIO_MEDIUM);
 
+    // Go top if not yet
+    if(!EndstopTop.IsHi()) Motor.Run(dirForward, 54000);
+
     TmrOneSecond.StartOrRestart();
 
     // ==== Main cycle ====
@@ -123,11 +126,6 @@ void OnCmd(Shell_t *PShell) {
     // Handle command
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
-
-    else if(PCmd->NameIs("Home")) {
-        Motor.Run(dirReverse, SPD_MAX);
-        PShell->Ack(retvOk);
-    }
 
     else if(PCmd->NameIs("Down")) {
         // Check if bottom endstop reched
