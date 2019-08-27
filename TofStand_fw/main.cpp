@@ -6,6 +6,7 @@
 #include "shell.h"
 #include "usb_cdc.h"
 #include "L6470.h"
+#include "led.h"
 
 #if 1 // =============== Low level ================
 // Forever
@@ -21,6 +22,8 @@ static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 L6470_t Motor{M_SPI};
 #define SPD_MAX     72000
 
+LedBlinker_t Led(GPIOB, 2, omPushPull);
+
 void EndstopHandler();
 PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
 PinIrq_t EndstopBottom{ENDSTOP1, pudPullDown, EndstopHandler};
@@ -34,6 +37,9 @@ int main() {
     // ==== Init OS ====
     halInit();
     chSysInit();
+
+    Led.Init();
+    Led.On();
 
     // ==== Init Hard & Soft ====
     EvtQMain.Init();
@@ -56,9 +62,12 @@ int main() {
     EndstopTop.EnableIrq(IRQ_PRIO_MEDIUM);
 
     // Go top if not yet
+    chThdSleepMilliseconds(720); // Let power to stabilize
     if(!EndstopTop.IsHi()) Motor.Run(dirForward, 54000);
 
     TmrOneSecond.StartOrRestart();
+
+    Led.Off();
 
     // ==== Main cycle ====
     ITask();
@@ -71,6 +80,7 @@ void ITask() {
 //        Printf("Msg.ID %u\r", Msg.ID);
         switch(Msg.ID) {
             case evtIdShellCmd:
+                Led.StartOrContinue(lsqCmd);
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
