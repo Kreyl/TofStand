@@ -66,8 +66,8 @@ public:
     void SetStepMode(StepMode_t StepMode) { SetParam8(L6470_REG_STEP_MODE, (uint8_t)StepMode); }
     void SetAcceleration(uint16_t Value) { SetParam16(L6470_REG_ACCELERATION, Value); }
     void SetDeceleration(uint16_t Value) { SetParam16(L6470_REG_DECELERATION, Value); }
-    void SetMaxSpeed(uint32_t MaxSpd_stepS) {
-//        uint32_t tmp = (MaxSpd_stepS * 65536) / 1000000;
-//        SetParam16(L6470_REG_MAX_SPEED, tmp);
-    }
+    void SetCurrent4Hold(uint8_t KVal) { SetParam8(0x09, KVal); }
+    void SetCurrent4Run(uint8_t KVal)  { SetParam8(0x0A, KVal); }
+    void SetCurrent4Acc(uint8_t KVal)  { SetParam8(0x0B, KVal); }
+    void SetCurrent4Dec(uint8_t KVal)  { SetParam8(0x0C, KVal); }
 };

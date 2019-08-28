@@ -55,6 +55,9 @@ int main() {
     Motor.SetAcceleration(120);
     Motor.SetDeceleration(12000);
     Motor.SetStepMode(sm128);
+    // Current
+    Motor.SetCurrent4Run(4);
+    Motor.SetCurrent4Hold(12);
 
     // Endstops
     EndstopTop.Init(ttRising);
