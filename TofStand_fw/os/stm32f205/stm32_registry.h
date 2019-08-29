@@ -69,7 +69,9 @@
 
 #elif defined(STM32F205xx) || defined(STM32F215xx) ||                       \
       defined(STM32F207xx) || defined(STM32F217xx)
+#ifndef STM32F2XX
 #define STM32F2XX
+#endif
 
 #else
 #error "STM32F2xx/F4xx device not specified"

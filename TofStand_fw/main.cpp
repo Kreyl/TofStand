@@ -20,13 +20,15 @@ static bool UsbPinWasHi = false;
 static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 L6470_t Motor{M_SPI};
-#define SPD_MAX     72000
 
 LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 void EndstopHandler();
 PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
 PinIrq_t EndstopBottom{ENDSTOP1, pudPullDown, EndstopHandler};
+
+void BusyHandler();
+PinIrq_t Busy{M_AUX_GPIO, M_BUSY_SYNC1, pudPullUp, BusyHandler};
 #endif
 
 int main() {
@@ -63,6 +65,9 @@ int main() {
     EndstopTop.Init(ttRising);
     EndstopBottom.Init(ttRising);
     EndstopTop.EnableIrq(IRQ_PRIO_MEDIUM);
+
+    Busy.Init(ttRising);
+    Busy.EnableIrq(IRQ_PRIO_MEDIUM);
 
     // Go top if not yet
     chThdSleepMilliseconds(720); // Let power to stabilize
@@ -102,21 +107,26 @@ void ITask() {
                 break;
 
             case evtIdEndstop:
-                PrintfI("Endstop\r");
-                if(UsbCDC.IsActive()) UsbCDC.Print("Endstop\r\n");
+                PrintfI("Ready e\r\n");
+                if(UsbCDC.IsActive()) UsbCDC.Print("Ready\r\n");
+                break;
+
+            case evtIdBusyFlagHi:
+                PrintfI("Ready\r\n");
+                if(UsbCDC.IsActive()) UsbCDC.Print("Ready\r\n");
                 break;
 
 #if 1 // ======= USB =======
             case evtIdUsbConnect:
-                Printf("USB connect\r");
+//                Printf("USB connect\r");
                 UsbCDC.Connect();
                 break;
             case evtIdUsbDisconnect:
                 UsbCDC.Disconnect();
-                Printf("USB disconnect\r");
+//                Printf("USB disconnect\r");
                 break;
             case evtIdUsbReady:
-                Printf("USB ready\r");
+//                Printf("USB ready\r");
                 break;
 #endif
 
@@ -125,10 +135,17 @@ void ITask() {
     } // while true
 }
 
+
 void EndstopHandler() {
-    Motor.StopSoftAndHold();
+//    Motor.StopSoftAndHold();
 //    PrintfI("EndstopHandler\r");
     EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstop));
+    Motor.SwitchLoHi(); // HardStop the motor using switch. Way faster than SPI cmd.
+}
+
+void BusyHandler() {
+//    PrintfI("Ready\r");
+    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdBusyFlagHi));
 }
 
 #if 1 // ======================= Command processing ============================
@@ -138,7 +155,7 @@ void OnCmd(Shell_t *PShell) {
 
     // Handle command
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
-    else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
+    else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
     else if(PCmd->NameIs("Down")) {
         // Check if bottom endstop reched
@@ -162,11 +179,78 @@ void OnCmd(Shell_t *PShell) {
         PShell->Ack(retvOk);
     }
 
+    else if(PCmd->NameIs("MoveDown")) {
+        // Check if top endstop reched
+        if(EndstopBottom.IsHi()) { PShell->Ack(retvBadState); return; }
+        uint32_t ISteps = 0, ISpd = SPD_MAX;
+        if(PCmd->GetNext<uint32_t>(&ISteps) != retvOk) { PShell->Ack(retvCmdError); return; }
+        PCmd->GetNext<uint32_t>(&ISpd); // May absent
+        if(ISteps == 0) { PShell->Ack(retvBadValue); return; }
+        if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
+        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
+        Motor.Move(dirReverse, ISteps, ISpd);
+        PShell->Ack(retvOk);
+    }
+    else if(PCmd->NameIs("MoveUp")) {
+        // Check if top endstop reched
+        if(EndstopTop.IsHi()) { PShell->Ack(retvBadState); return; }
+        uint32_t ISteps = 0, ISpd = SPD_MAX;
+        if(PCmd->GetNext<uint32_t>(&ISteps) != retvOk) { PShell->Ack(retvCmdError); return; }
+        PCmd->GetNext<uint32_t>(&ISpd); // May absent
+        if(ISteps == 0) { PShell->Ack(retvBadValue); return; }
+        if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
+        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
+        Motor.Move(dirForward, ISteps, ISpd);
+        PShell->Ack(retvOk);
+    }
+
     else if(PCmd->NameIs("Stop")) {
         Motor.StopSoftAndHold();
         PShell->Ack(retvOk);
     }
 
-    else PShell->Ack(retvCmdUnknown);
+#if 1 // ==== Read/Write regs ====
+    else if(PCmd->NameIs("Get8")) {
+        uint8_t Addr = 0;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t Value = Motor.GetParam8(Addr);
+        Printf("%u  0x%X\r", Value, Value);
+    }
+    else if(PCmd->NameIs("Get16")) {
+        uint8_t Addr = 0;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t Value = Motor.GetParam16(Addr);
+        Printf("%u  0x%X\r", Value, Value);
+    }
+    else if(PCmd->NameIs("Get32")) {
+        uint8_t Addr = 0;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t Value = Motor.GetParam32(Addr);
+        Printf("%u  0x%X\r", Value, Value);
+    }
+
+    else if(PCmd->NameIs("Set8")) {
+        uint8_t Addr = 0;
+        uint32_t Value;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint32_t>(&Value) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetParam8(Addr, Value);
+        PShell->Ack(retvOk);
+    }
+    else if(PCmd->NameIs("Set16")) {
+        uint8_t Addr = 0;
+        uint32_t Value;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint32_t>(&Value) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetParam16(Addr, Value);
+        PShell->Ack(retvOk);
+    }
+#endif
+
+    else {
+        Printf("%S\r\n", PCmd->Name);
+        if(UsbCDC.IsActive()) UsbCDC.Print("%S\r\n", PCmd->Name);
+        PShell->Ack(retvCmdUnknown);
+    }
 }
 #endif

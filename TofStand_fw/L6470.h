@@ -11,7 +11,7 @@
 #include "uart.h"
 #include "board.h"
 
-#define L6470_CS_DELAY() { for(volatile uint32_t i=0; i<10; i++) __NOP(); }
+#define L6470_CS_DELAY() { for(volatile uint32_t i=0; i<20; i++); }
 
 #if 1 // ========= Registers etc. ===========
 // Registers
@@ -23,7 +23,8 @@
 #define L6470_REG_STATUS        0x19
 
 // Values
-#define L6470_MAX_SPEED_EVER    15610
+#define SPD_MAX                 72000
+#define SPD_MAX_SMALL           (SPD_MAX_SMALL / 1024) // For some reason, there are two definitions of speed
 
 #endif
 
@@ -43,10 +44,7 @@ private:
     }
     // Commands
     uint16_t GetStatus();
-    void GetParam(uint8_t Addr, uint8_t *PParam1);
-    void GetParam(uint8_t Addr, uint8_t *PParam1, uint8_t *PParam2);
-    void SetParam8(uint8_t Addr, uint8_t Value);
-    void SetParam16(uint8_t Addr, uint16_t Value);
+
     void Cmd(uint8_t ACmd); // Single-byte cmd
 protected:
     void ResetOn()  { PinSetLo(M_AUX_GPIO, M_STBY_RST); }
@@ -55,13 +53,22 @@ protected:
     bool IsFlagOn() { return !PinIsHi(M_AUX_GPIO, M_FLAG1); }
 public:
     L6470_t(SPI_TypeDef *ASpi) : ISpi(ASpi) {}
+    // Control
     void Init();
+    uint8_t GetParam8(uint8_t Addr);
+    uint16_t GetParam16(uint8_t Addr);
+    uint32_t GetParam32(uint8_t Addr);
+    void SetParam8(uint8_t Addr, uint8_t Value);
+    void SetParam16(uint8_t Addr, uint16_t Value);
     // Motion
     void Run(Dir_t Dir, uint32_t Speed);
+    void Move(Dir_t Dir, uint32_t Steps, uint32_t Speed);
+    void SwitchLoHi();
     // Stop
     void StopSoftAndHold() { Cmd(0b10110000); } // SoftStop
     void StopSoftAndHiZ()  { Cmd(0b10100000); } // SoftHiZ
     // Mode of operation
+    void SetMaxSpeed(uint32_t MaxSpd) { SetParam16(L6470_REG_MAX_SPEED, MaxSpd); }
     void SetConfig(uint16_t Cfg) { SetParam16(L6470_REG_CONFIG, Cfg); }
     void SetStepMode(StepMode_t StepMode) { SetParam8(L6470_REG_STEP_MODE, (uint8_t)StepMode); }
     void SetAcceleration(uint16_t Value) { SetParam16(L6470_REG_ACCELERATION, Value); }

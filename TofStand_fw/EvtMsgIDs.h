@@ -22,4 +22,5 @@ enum EvtMsgId_t {
     evtIdUsbOutDone,
 
     evtIdEndstop,
+    evtIdBusyFlagHi,
 };
