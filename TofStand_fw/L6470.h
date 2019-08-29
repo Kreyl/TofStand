@@ -62,7 +62,7 @@ public:
     void SetParam16(uint8_t Addr, uint16_t Value);
     // Motion
     void Run(Dir_t Dir, uint32_t Speed);
-    void Move(Dir_t Dir, uint32_t Steps, uint32_t Speed);
+    void Move(Dir_t Dir, uint32_t Speed, uint32_t Steps);
     void SwitchLoHi();
     // Stop
     void StopSoftAndHold() { Cmd(0b10110000); } // SoftStop

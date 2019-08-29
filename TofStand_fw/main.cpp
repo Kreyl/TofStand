@@ -21,6 +21,8 @@ static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 L6470_t Motor{M_SPI};
 
+#define STEPS_IN_STAND  450000
+
 LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 void EndstopHandler();
@@ -54,24 +56,24 @@ int main() {
 
     // Motor
     Motor.Init();
-    Motor.SetAcceleration(120);
+    Motor.SetAcceleration(1200);
     Motor.SetDeceleration(12000);
     Motor.SetStepMode(sm128);
     // Current
     Motor.SetCurrent4Run(4);
-    Motor.SetCurrent4Hold(12);
+    Motor.SetCurrent4Hold(18);
 
     // Endstops
     EndstopTop.Init(ttRising);
     EndstopBottom.Init(ttRising);
     EndstopTop.EnableIrq(IRQ_PRIO_MEDIUM);
-
+    // Busy
     Busy.Init(ttRising);
     Busy.EnableIrq(IRQ_PRIO_MEDIUM);
 
-    // Go top if not yet
     chThdSleepMilliseconds(720); // Let power to stabilize
-    if(!EndstopTop.IsHi()) Motor.Run(dirForward, 54000);
+    // Go top if not yet
+    if(!EndstopTop.IsHi()) Motor.Move(dirForward, 54000, STEPS_IN_STAND);
 
     TmrOneSecond.StartOrRestart();
 
@@ -106,10 +108,10 @@ void ITask() {
                 }
                 break;
 
-            case evtIdEndstop:
-                PrintfI("Ready e\r\n");
-                if(UsbCDC.IsActive()) UsbCDC.Print("Ready\r\n");
-                break;
+//            case evtIdEndstop:
+//                PrintfI("Ready e\r\n");
+//                if(UsbCDC.IsActive()) UsbCDC.Print("Ready\r\n");
+//                break;
 
             case evtIdBusyFlagHi:
                 PrintfI("Ready\r\n");
@@ -139,12 +141,12 @@ void ITask() {
 void EndstopHandler() {
 //    Motor.StopSoftAndHold();
 //    PrintfI("EndstopHandler\r");
-    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstop));
+//    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstop));
     Motor.SwitchLoHi(); // HardStop the motor using switch. Way faster than SPI cmd.
 }
 
 void BusyHandler() {
-//    PrintfI("Ready\r");
+//    PrintfI("BusyHandler\r");
     EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdBusyFlagHi));
 }
 
@@ -158,49 +160,27 @@ void OnCmd(Shell_t *PShell) {
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
     else if(PCmd->NameIs("Down")) {
-        // Check if bottom endstop reched
+        // Check if top endstop reched
         if(EndstopBottom.IsHi()) { PShell->Ack(retvBadState); return; }
-        uint32_t ISpd = 0;
-        if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t ISteps = STEPS_IN_STAND, ISpd = SPD_MAX;
+        PCmd->GetNext<uint32_t>(&ISpd); // May absent
+        PCmd->GetNext<uint32_t>(&ISteps); // May absent
+        if(ISteps == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Motor.Run(dirReverse, ISpd);
+        Motor.Move(dirReverse, ISpd, ISteps);
         PShell->Ack(retvOk);
     }
-
     else if(PCmd->NameIs("Up")) {
         // Check if top endstop reched
         if(EndstopTop.IsHi()) { PShell->Ack(retvBadState); return; }
-        uint32_t ISpd = 0;
-        if(PCmd->GetNext<uint32_t>(&ISpd) != retvOk) { PShell->Ack(retvCmdError); return; }
-        if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
-        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Motor.Run(dirForward, ISpd);
-        PShell->Ack(retvOk);
-    }
-
-    else if(PCmd->NameIs("MoveDown")) {
-        // Check if top endstop reched
-        if(EndstopBottom.IsHi()) { PShell->Ack(retvBadState); return; }
-        uint32_t ISteps = 0, ISpd = SPD_MAX;
-        if(PCmd->GetNext<uint32_t>(&ISteps) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t ISteps = STEPS_IN_STAND, ISpd = SPD_MAX;
         PCmd->GetNext<uint32_t>(&ISpd); // May absent
+        PCmd->GetNext<uint32_t>(&ISteps); // May absent
         if(ISteps == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
         if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Motor.Move(dirReverse, ISteps, ISpd);
-        PShell->Ack(retvOk);
-    }
-    else if(PCmd->NameIs("MoveUp")) {
-        // Check if top endstop reched
-        if(EndstopTop.IsHi()) { PShell->Ack(retvBadState); return; }
-        uint32_t ISteps = 0, ISpd = SPD_MAX;
-        if(PCmd->GetNext<uint32_t>(&ISteps) != retvOk) { PShell->Ack(retvCmdError); return; }
-        PCmd->GetNext<uint32_t>(&ISpd); // May absent
-        if(ISteps == 0) { PShell->Ack(retvBadValue); return; }
-        if(ISpd == 0) { PShell->Ack(retvBadValue); return; }
-        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
-        Motor.Move(dirForward, ISteps, ISpd);
+        Motor.Move(dirForward, ISpd, ISteps);
         PShell->Ack(retvOk);
     }
 
