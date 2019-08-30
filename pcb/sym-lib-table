@@ -1,3 +1,0 @@
-(sym_lib_table
-  (lib (name "Telegraph-rescue")(type "Legacy")(uri "${KIPRJMOD}/Telegraph-rescue.lib")(options "")(descr ""))
-)
