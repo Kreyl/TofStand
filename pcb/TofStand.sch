@@ -2217,7 +2217,6 @@ NoConn ~ 6750 3350
 NoConn ~ 6750 3450
 NoConn ~ 6750 3650
 NoConn ~ 6750 3750
-NoConn ~ 6750 3850
 NoConn ~ 6750 3950
 NoConn ~ 6750 4350
 NoConn ~ 6750 4500
@@ -2416,4 +2415,19 @@ F 3 "" H 10900 1750 60  0000 C CNN
 	1    10900 1750
 	1    0    0    -1  
 $EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 5D7254FA
+P 6850 3850
+F 0 "#PWR?" H 6940 3830 30  0001 C CNN
+F 1 "GND" H 6850 3770 30  0001 C CNN
+F 2 "" H 6850 3850 60  0000 C CNN
+F 3 "" H 6850 3850 60  0000 C CNN
+	1    6850 3850
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	6850 3850 6750 3850
+Text Notes 6900 3850 0    50   ~ 0
+0 at this PCB, 1 at old PCB
 $EndSCHEMATC
