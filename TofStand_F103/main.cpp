@@ -1,12 +1,12 @@
 #include "hal.h"
 #include "MsgQ.h"
 #include "kl_lib.h"
-//#include "Sequences.h"
+#include "Sequences.h"
 #include "uart.h"
 #include "shell.h"
 //#include "usb_cdc.h"
 //#include "L6470.h"
-//#include "led.h"
+#include "led.h"
 
 #if 1 // =============== Low level ================
 // Forever
@@ -23,7 +23,7 @@ static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 //#define STEPS_IN_STAND  450000
 
-//LedBlinker_t Led(GPIOB, 2, omPushPull);
+LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 //void EndstopHandler();
 //PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
@@ -42,8 +42,8 @@ int main() {
     halInit();
     chSysInit();
 
-//    Led.Init();
-//    Led.On();
+    Led.Init();
+    Led.On();
 
     // ==== Init Hard & Soft ====
 //    JtagDisable();
@@ -79,8 +79,6 @@ int main() {
 
 //    TmrOneSecond.StartOrRestart();
 
-//    Led.Off();
-
     // ==== Main cycle ====
     ITask();
 }
@@ -92,7 +90,7 @@ void ITask() {
 //        Printf("Msg.ID %u\r", Msg.ID);
         switch(Msg.ID) {
             case evtIdShellCmd:
-//                Led.StartOrContinue(lsqCmd);
+                Led.StartOrContinue(lsqCmd);
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;

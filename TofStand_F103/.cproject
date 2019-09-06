@@ -34,6 +34,7 @@
 									<listOptionValue builtIn="false" value="../os/hal"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
 									<listOptionValue builtIn="false" value="../os/stm32f103"/>
+									<listOptionValue builtIn="false" value="../usb"/>
 								</option>
 								<inputType id="com.atollic.truestudio.as.input.1449556023" name="Input" superClass="com.atollic.truestudio.as.input"/>
 							</tool>
@@ -46,6 +47,7 @@
 									<listOptionValue builtIn="false" value="../os/hal"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
 									<listOptionValue builtIn="false" value="../os/stm32f103"/>
+									<listOptionValue builtIn="false" value="../usb"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.450172789" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.132135209" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F103RC" valueType="enumerated"/>
@@ -74,6 +76,7 @@
 									<listOptionValue builtIn="false" value="../os/hal"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
 									<listOptionValue builtIn="false" value="../os/stm32f103"/>
+									<listOptionValue builtIn="false" value="../usb"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.176032936" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.554519079" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F103RC" valueType="enumerated"/>
@@ -108,7 +111,7 @@
 					</folderInfo>
 					<fileInfo id="com.atollic.truestudio.exe.debug.1405052703.499373514" name="main.cpp" rcbsApplicability="disable" resourcePath="main.cpp" toolsToInvoke="com.atollic.truestudio.exe.debug.toolchain.gpp.1820324997.1337085104">
 						<tool id="com.atollic.truestudio.exe.debug.toolchain.gpp.1820324997.1337085104" name="C++ Compiler" superClass="com.atollic.truestudio.exe.debug.toolchain.gpp.1820324997">
-							<option id="com.atollic.truestudio.gpp.symbols.defined.1215563670" superClass="com.atollic.truestudio.gpp.symbols.defined" valueType="definedSymbols">
+							<option id="com.atollic.truestudio.gpp.symbols.defined.1215563670" name="Defined symbols" superClass="com.atollic.truestudio.gpp.symbols.defined" valueType="definedSymbols">
 								<listOptionValue builtIn="false" value="&quot;BUILD_TIME=${current_date}&quot;"/>
 							</option>
 							<inputType id="com.atollic.truestudio.gpp.input.511339540" superClass="com.atollic.truestudio.gpp.input"/>
@@ -161,6 +164,7 @@
 									<listOptionValue builtIn="false" value="../os/hal"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
 									<listOptionValue builtIn="false" value="../os/stm32f103"/>
+									<listOptionValue builtIn="false" value="../usb"/>
 								</option>
 								<inputType id="com.atollic.truestudio.as.input.927686223" name="Input" superClass="com.atollic.truestudio.as.input"/>
 							</tool>
@@ -180,6 +184,7 @@
 									<listOptionValue builtIn="false" value="../os/hal"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
 									<listOptionValue builtIn="false" value="../os/stm32f103"/>
+									<listOptionValue builtIn="false" value="../usb"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.428619992" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.515765064" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F103RC" valueType="enumerated"/>
@@ -215,6 +220,7 @@
 									<listOptionValue builtIn="false" value="../os/hal"/>
 									<listOptionValue builtIn="false" value="../os/include"/>
 									<listOptionValue builtIn="false" value="../os/stm32f103"/>
+									<listOptionValue builtIn="false" value="../usb"/>
 								</option>
 								<option id="com.atollic.truestudio.common_options.target.endianess.433373555" name="Endianess" superClass="com.atollic.truestudio.common_options.target.endianess" useByScannerDiscovery="false"/>
 								<option id="com.atollic.truestudio.common_options.target.mcpu.2055959664" name="Microcontroller" superClass="com.atollic.truestudio.common_options.target.mcpu" useByScannerDiscovery="false" value="STM32F103RC" valueType="enumerated"/>
@@ -246,7 +252,7 @@
 					</folderInfo>
 					<fileInfo id="com.atollic.truestudio.configuration.release.559064185.276277505" name="main.cpp" rcbsApplicability="disable" resourcePath="main.cpp" toolsToInvoke="com.atollic.truestudio.exe.release.toolchain.gpp.1089179726.2023548770">
 						<tool id="com.atollic.truestudio.exe.release.toolchain.gpp.1089179726.2023548770" name="C++ Compiler" superClass="com.atollic.truestudio.exe.release.toolchain.gpp.1089179726">
-							<option id="com.atollic.truestudio.gpp.symbols.defined.144727883" superClass="com.atollic.truestudio.gpp.symbols.defined" valueType="definedSymbols">
+							<option id="com.atollic.truestudio.gpp.symbols.defined.144727883" name="Defined symbols" superClass="com.atollic.truestudio.gpp.symbols.defined" valueType="definedSymbols">
 								<listOptionValue builtIn="false" value="STM32F10X_HD"/>
 								<listOptionValue builtIn="false" value="USE_STDPERIPH_DRIVER"/>
 								<listOptionValue builtIn="false" value="&quot;BUILD_TIME=${current_date}&quot;"/>
