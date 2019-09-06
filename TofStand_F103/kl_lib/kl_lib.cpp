@@ -1565,6 +1565,7 @@ void Clk_t::SetCoreClk(CoreClk_t CoreClk) {
 //        DisablePLL();
 //    }
     SetupPLLSrc(pllSrcHSIdiv2);
+//    SetupPLLSrc(pllSrcPrediv);
 
     // Setup dividers
     switch(CoreClk) {
@@ -1632,6 +1633,17 @@ void Clk_t::SetupBusDividers(AHBDiv_t AHBDiv, APBDiv_t APB1Div, APBDiv_t APB2Div
     tmp |= ((uint32_t)APB1Div) << 8;
     tmp |= ((uint32_t)APB2Div) << 11;
     RCC->CFGR = tmp;
+}
+
+uint8_t Clk_t::EnableHSE() {
+    RCC->CR |= RCC_CR_HSEON;    // Enable HSE
+    // Wait until ready
+    uint32_t StartUpCounter=0;
+    do {
+        if(RCC->CR & RCC_CR_HSERDY) return retvOk;   // HSE is ready
+        StartUpCounter++;
+    } while(StartUpCounter < CLK_STARTUP_TIMEOUT);
+    return retvFail; // Timeout
 }
 
 uint8_t Clk_t::EnablePLL() {

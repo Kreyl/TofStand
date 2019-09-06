@@ -1606,8 +1606,6 @@ enum APBDiv_t {apbDiv1=0b000, apbDiv2=0b100, apbDiv4=0b101, apbDiv8=0b110, apbDi
 
 class Clk_t {
 private:
-    uint8_t EnableHSE();
-    uint8_t EnablePLL();
 public:
     // Frequency values
     uint32_t AHBFreqHz;     // HCLK: AHB Bus, Core, Memory, DMA; 32 MHz max
@@ -1617,10 +1615,12 @@ public:
     uint8_t SwitchToHSI();
     uint8_t SwitchToHSE();
     uint8_t SwitchToPLL();
-    void DisableHSE() { RCC->CR &= ~RCC_CR_HSEON; }
     uint8_t EnableHSI();
+    uint8_t EnableHSE();
+    uint8_t EnablePLL();
     void DisableHSI() { RCC->CR &= ~RCC_CR_HSION; }
     void DisablePLL() { RCC->CR &= ~RCC_CR_PLLON; }
+    void DisableHSE() { RCC->CR &= ~RCC_CR_HSEON; }
 
     void SetupBusDividers(AHBDiv_t AHBDiv, APBDiv_t APB1Div, APBDiv_t APB2Div);
     uint8_t SetupPllMulDiv(PllMul_t PllMul, PreDiv_t PreDiv);

@@ -156,12 +156,12 @@ void UsbCDC_t::Init() {
 }
 
 void UsbCDC_t::Connect() {
-    usbDisconnectBus(SerUsbCfg.usbp);
-    chThdSleepMilliseconds(504);
+//    usbDisconnectBus(SerUsbCfg.usbp);
+//    chThdSleepMilliseconds(504);
     usbStart(SerUsbCfg.usbp, &UsbCfg);
-    usbConnectBus(SerUsbCfg.usbp);
+//    usbConnectBus(SerUsbCfg.usbp);
 }
 void UsbCDC_t::Disconnect() {
     usbStop(SerUsbCfg.usbp);
-    usbDisconnectBus(SerUsbCfg.usbp);
+//    usbDisconnectBus(SerUsbCfg.usbp);
 }

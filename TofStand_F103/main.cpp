@@ -35,7 +35,15 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 int main() {
     // ==== Setup clock ====
-//    Clk.SetCoreClk(cclk48MHz);
+    Clk.EnablePrefetch();
+    if(Clk.EnableHSE() == retvOk) {
+        Clk.SetupPLLSrc(pllSrcPrediv);
+        Clk.SetupFlashLatency(48);
+        // 12MHz * 4 = 48MHz
+        if(Clk.SetupPllMulDiv(pllMul4, preDiv1) == retvOk) {
+            if(Clk.EnablePLL() == retvOk) Clk.SwitchToPLL();
+        }
+    }
     Clk.UpdateFreqValues();
 
     // ==== Init OS ====
