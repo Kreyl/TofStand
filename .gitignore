@@ -1,3 +1,6 @@
 *.prefs
 *.xml
 TofStand_fw/Debug/
+pcb/TofStand.dsn
+pcb/TofStand.kicad_pcb-bak
+pcb/TofStand.ses

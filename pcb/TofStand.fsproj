@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--*******************************************-->
+<!--   File    : TofStand.fsproj               -->
+<!--   Format  : TopoR Project file            -->
+<!--   Version : 2                             -->
+<!--   Program : TopoR 8 Layer 7.0.18661       -->
+<!--   Date    : Wednesday, September 04, 2019 -->
+<!--   Time    : 20:27                         -->
+<!--*******************************************-->
+
+<Project>
+   <Version current="2"/>
+   <GUID>{DEB10BE7-48E8-492D-8459-2D18B00EF397}</GUID>
+   <Documents>
+      <Section name="PCB" isExpanded="true">
+         <File path=".\TofStand.fsx" isopened="1" dateChange="2019-09-02 17:17:24"/>
+      </Section>
+      <Section name="AutoRouting" isExpanded="false"/>
+   </Documents>
+</Project>
