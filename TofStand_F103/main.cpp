@@ -34,7 +34,7 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 #endif
 
 int main() {
-    // ==== Setup clock ====
+    // ===== Setup clock =====
     Clk.EnablePrefetch();
     if(Clk.EnableHSE() == retvOk) {
         Clk.SetupPLLSrc(pllSrcPrediv);
