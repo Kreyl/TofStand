@@ -1628,6 +1628,7 @@ public:
         if(Src == pllSrcHSIdiv2) RCC->CFGR &= ~RCC_CFGR_PLLSRC;
         else RCC->CFGR |= RCC_CFGR_PLLSRC;
     }
+    void SetUsbPrescalerTo1() { RCC->CFGR |= RCC_CFGR_USBPRE; }
     void UpdateFreqValues();
     //void UpdateSysTick() { SysTick->LOAD = AHBFreqHz / CH_FREQUENCY - 1; }
     void SetupFlashLatency(uint8_t AHBClk_MHz);

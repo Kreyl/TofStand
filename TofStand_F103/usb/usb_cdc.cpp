@@ -140,7 +140,7 @@ void UsbCDC_t::SignalCmdProcessed() {
 #endif
 
 void UsbCDC_t::Init() {
-#if defined STM32L4XX || defined STM32F2XX
+#if defined STM32L4XX || defined STM32F2XX || defined STM32F1XX
     PinSetupAlterFunc(USB_DM, omPushPull, pudNone, USB_AF, psHigh);
     PinSetupAlterFunc(USB_DP, omPushPull, pudNone, USB_AF, psHigh);
 #else
@@ -157,11 +157,15 @@ void UsbCDC_t::Init() {
 
 void UsbCDC_t::Connect() {
 //    usbDisconnectBus(SerUsbCfg.usbp);
-//    chThdSleepMilliseconds(504);
+    PinSetupAnalog(USB_PULLUP);
+    chThdSleepMilliseconds(504);
     usbStart(SerUsbCfg.usbp, &UsbCfg);
+    PinSetHi(USB_PULLUP);
+    PinSetupOut(USB_PULLUP, omPushPull);
 //    usbConnectBus(SerUsbCfg.usbp);
 }
 void UsbCDC_t::Disconnect() {
     usbStop(SerUsbCfg.usbp);
+    PinSetupAnalog(USB_PULLUP);
 //    usbDisconnectBus(SerUsbCfg.usbp);
 }

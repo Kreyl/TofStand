@@ -44,8 +44,9 @@
 #define USB_DETECT_PIN  GPIOA, 9
 #define USB_DM          GPIOA, 11
 #define USB_DP          GPIOA, 12
-#define USB_AF          AF10
+#define USB_AF          AF1 // dummy
 #define BOARD_OTG_NOVBUSSENS    TRUE
+#define USB_PULLUP      GPIOB, 12
 
 // Endstops
 #define ENDSTOP1        GPIOC, 11

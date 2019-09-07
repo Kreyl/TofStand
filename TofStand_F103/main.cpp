@@ -4,7 +4,7 @@
 #include "Sequences.h"
 #include "uart.h"
 #include "shell.h"
-//#include "usb_cdc.h"
+#include "usb_cdc.h"
 //#include "L6470.h"
 #include "led.h"
 
@@ -16,7 +16,7 @@ CmdUart_t Uart{&CmdUartParams};
 static void ITask();
 static void OnCmd(Shell_t *PShell);
 
-//static bool UsbPinWasHi = false;
+static bool UsbPinWasHi = false;
 static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 //L6470_t Motor{M_SPI};
@@ -41,7 +41,9 @@ int main() {
         Clk.SetupFlashLatency(48);
         // 12MHz * 4 = 48MHz
         if(Clk.SetupPllMulDiv(pllMul4, preDiv1) == retvOk) {
+            Clk.SetupBusDividers(ahbDiv1, apbDiv2, apbDiv1);
             if(Clk.EnablePLL() == retvOk) Clk.SwitchToPLL();
+            Clk.SetUsbPrescalerTo1(); // This bit must be valid before enabling the USB clock in the RCC_APB1ENR register
         }
     }
     Clk.UpdateFreqValues();
@@ -61,8 +63,8 @@ int main() {
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-//    UsbCDC.Init();
-//    PinSetupInput(USB_DETECT_PIN, pudPullDown); // Usb detect pin
+    UsbCDC.Init();
+    PinSetupInput(USB_DETECT_PIN, pudPullDown); // Usb detect pin
 
     // Motor
 //    Motor.Init();
@@ -85,7 +87,7 @@ int main() {
     // Go top if not yet
 //    if(!EndstopTop.IsHi()) Motor.Move(dirForward, 54000, STEPS_IN_STAND);
 
-//    TmrOneSecond.StartOrRestart();
+    TmrOneSecond.StartOrRestart();
 
     // ==== Main cycle ====
     ITask();
@@ -106,14 +108,14 @@ void ITask() {
             case evtIdEverySecond:
 //                Printf("Second\r");
                 // Check if USB connected/disconnected
-//                if(PinIsHi(USB_DETECT_PIN) and !UsbPinWasHi) {
-//                    UsbPinWasHi = true;
-//                    EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbConnect));
-//                }
-//                else if(!PinIsHi(USB_DETECT_PIN) and UsbPinWasHi) {
-//                    UsbPinWasHi = false;
-//                    EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbDisconnect));
-//                }
+                if(PinIsHi(USB_DETECT_PIN) and !UsbPinWasHi) {
+                    UsbPinWasHi = true;
+                    EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbConnect));
+                }
+                else if(!PinIsHi(USB_DETECT_PIN) and UsbPinWasHi) {
+                    UsbPinWasHi = false;
+                    EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbDisconnect));
+                }
                 break;
 
 //            case evtIdBusyFlagHi:
@@ -121,17 +123,17 @@ void ITask() {
 //                if(UsbCDC.IsActive()) UsbCDC.Print("Ready\r\n");
 //                break;
 
-#if 0 // ======= USB =======
+#if 1 // ======= USB =======
             case evtIdUsbConnect:
-//                Printf("USB connect\r");
+                Printf("USB connect\r");
                 UsbCDC.Connect();
                 break;
             case evtIdUsbDisconnect:
                 UsbCDC.Disconnect();
-//                Printf("USB disconnect\r");
+                Printf("USB disconnect\r");
                 break;
             case evtIdUsbReady:
-//                Printf("USB ready\r");
+                Printf("USB ready\r");
                 break;
 #endif
 
