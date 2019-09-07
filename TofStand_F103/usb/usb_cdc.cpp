@@ -156,16 +156,25 @@ void UsbCDC_t::Init() {
 }
 
 void UsbCDC_t::Connect() {
-//    usbDisconnectBus(SerUsbCfg.usbp);
+#if defined STM32F1XX
     PinSetupAnalog(USB_PULLUP);
+#else
+    usbDisconnectBus(SerUsbCfg.usbp);
+#endif
     chThdSleepMilliseconds(504);
     usbStart(SerUsbCfg.usbp, &UsbCfg);
+#if defined STM32F1XX
     PinSetHi(USB_PULLUP);
     PinSetupOut(USB_PULLUP, omPushPull);
-//    usbConnectBus(SerUsbCfg.usbp);
+#else
+    usbConnectBus(SerUsbCfg.usbp);
+#endif
 }
 void UsbCDC_t::Disconnect() {
     usbStop(SerUsbCfg.usbp);
+#if defined STM32F1XX
     PinSetupAnalog(USB_PULLUP);
-//    usbDisconnectBus(SerUsbCfg.usbp);
+#else
+    usbDisconnectBus(SerUsbCfg.usbp);
+#endif
 }
