@@ -161,7 +161,6 @@ void UsbCDC_t::Connect() {
 #else
     usbDisconnectBus(SerUsbCfg.usbp);
 #endif
-    chThdSleepMilliseconds(504);
     usbStart(SerUsbCfg.usbp, &UsbCfg);
 #if defined STM32F1XX
     PinSetHi(USB_PULLUP);

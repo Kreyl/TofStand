@@ -64,6 +64,9 @@ int main() {
     Clk.PrintFreqs();
 
     UsbCDC.Init();
+//    PinSetHi(USB_PULLUP);
+//    PinSetupOut(USB_PULLUP, omOpenDrain);
+    PinSetupAnalog(USB_PULLUP);
     PinSetupInput(USB_DETECT_PIN, pudPullDown); // Usb detect pin
 
     // Motor
