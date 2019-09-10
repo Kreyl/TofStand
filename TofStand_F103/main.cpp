@@ -23,6 +23,7 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 L6470_t Motor{M_SPI};
 #define STEPS_IN_STAND  450000
+#define DEFAULT_CURR    15
 
 void EndstopHandler();
 PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
@@ -71,8 +72,9 @@ int main() {
     Motor.SetDeceleration(12000);
     Motor.SetStepMode(sm128);
     // Current
-    Motor.SetCurrent4Run(18);
-    Motor.SetCurrent4Hold(18);
+    Motor.SetCurrent4Run(DEFAULT_CURR);
+    Motor.SetCurrent4Hold(DEFAULT_CURR);
+    Motor.StopSoftAndHold();
 
     // Endstops
     EndstopTop.Init(ttRising);
@@ -84,9 +86,7 @@ int main() {
 
     chThdSleepMilliseconds(720); // Let power to stabilize
     // Go top if not yet
-//    if(!EndstopTop.IsHi())
-        Motor.Move(dirForward, 54000, STEPS_IN_STAND);
-//    Motor.Run(dirForward, 15000);
+    if(!EndstopTop.IsHi()) Motor.Move(dirForward, 54000, STEPS_IN_STAND);
 
     TmrOneSecond.StartOrRestart();
 
@@ -145,7 +145,8 @@ void ITask() {
 
 
 void EndstopHandler() {
-//    Motor.SwitchLoHi(); // HardStop the motor using switch. Way faster than SPI cmd.
+//    PrintfI("Endstop\r");
+    Motor.SwitchLoHi(); // HardStop the motor using switch. Way faster than SPI cmd.
 }
 
 void BusyHandler() {
@@ -162,7 +163,15 @@ void OnCmd(Shell_t *PShell) {
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
+    else if(PCmd->NameIs("in")) {
+        if(EndstopBottom.IsHi()) Printf("Bottom Hi\r");
+        else Printf("Bottom Lo\r");
+        if(EndstopTop.IsHi()) Printf("Top Hi\r");
+        else Printf("Top Lo\r");
+    }
+
     else if(PCmd->NameIs("Down")) {
+//        Motor.SwitchLoHi();
         // Check if top endstop reched
         if(EndstopBottom.IsHi()) { PShell->Ack(retvBadState); return; }
         uint32_t ISteps = STEPS_IN_STAND, ISpd = SPD_MAX;
@@ -175,6 +184,7 @@ void OnCmd(Shell_t *PShell) {
         PShell->Ack(retvOk);
     }
     else if(PCmd->NameIs("Up")) {
+//        Motor.SwitchLoHi();
         // Check if top endstop reched
         if(EndstopTop.IsHi()) { PShell->Ack(retvBadState); return; }
         uint32_t ISteps = STEPS_IN_STAND, ISpd = SPD_MAX;
@@ -189,6 +199,14 @@ void OnCmd(Shell_t *PShell) {
 
     else if(PCmd->NameIs("Stop")) {
         Motor.StopSoftAndHold();
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("SetCur")) {
+        uint8_t FCurr = 0;
+        if(PCmd->GetNext<uint8_t>(&FCurr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetCurrent4Run(FCurr);
+        Motor.SetCurrent4Hold(FCurr);
         PShell->Ack(retvOk);
     }
 

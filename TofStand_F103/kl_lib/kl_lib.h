@@ -1124,13 +1124,22 @@ public:
     void Init(ExtiTrigType_t ATriggerType) const {
         // Init pin as input
         PinSetupInput(PGpio, PinN, PullUpDown);
+        // Connect pin to EXTI
 #ifndef STM32F1XX
         rccEnableAPB2(RCC_APB2ENR_SYSCFGEN, FALSE); // Enable sys cfg controller
 #endif
         // Connect EXTI line to the pin of the port
         __unused uint8_t Indx   = PinN / 4;               // Indx of EXTICR register
         __unused uint8_t Offset = (PinN & 0x03) * 4;      // Offset in EXTICR register
-#ifndef STM32F1XX
+#ifdef STM32F1XX
+        RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;     // Enable AFIO clock
+        AFIO->EXTICR[Indx] &= ~((uint32_t)0b1111 << Offset);  // Clear port-related bits
+        // GPIOA requires all zeroes => nothing to do in this case
+        if     (PGpio == GPIOB) AFIO->EXTICR[Indx] |= 1UL << Offset;
+        else if(PGpio == GPIOC) AFIO->EXTICR[Indx] |= 2UL << Offset;
+        else if(PGpio == GPIOD) AFIO->EXTICR[Indx] |= 3UL << Offset;
+        else if(PGpio == GPIOE) AFIO->EXTICR[Indx] |= 4UL << Offset;
+#else
         SYSCFG->EXTICR[Indx] &= ~((uint32_t)0b1111 << Offset);  // Clear port-related bits
         // GPIOA requires all zeroes => nothing to do in this case
         if     (PGpio == GPIOB) SYSCFG->EXTICR[Indx] |= 1UL << Offset;
