@@ -505,7 +505,7 @@ void ClearErrFlags() {
 }
 
 // Wait for a Flash operation to complete or a TIMEOUT to occur
-static uint8_t WaitForLastOperation(systime_t Timeout_st) {
+uint8_t WaitForLastOperation(systime_t Timeout_st) {
     systime_t start = chVTGetSystemTimeX();
     while(FLASH->SR & FLASH_SR_BSY) {
         if(Timeout_st != TIME_INFINITE) {
@@ -2711,13 +2711,13 @@ void Spi_t::Setup(BitOrder_t BitOrder, CPOL_t CPOL, CPHA_t CPHA,
     div = Clk.APBFreqHz / Bitrate_Hz;
 #endif
     SpiClkDivider_t ClkDiv = sclkDiv2;
-    if     (div >= 128) ClkDiv = sclkDiv256;
-    else if(div >= 64) ClkDiv = sclkDiv128;
-    else if(div >= 32) ClkDiv = sclkDiv64;
-    else if(div >= 16) ClkDiv = sclkDiv32;
-    else if(div >= 8)  ClkDiv = sclkDiv16;
-    else if(div >= 4)  ClkDiv = sclkDiv8;
-    else if(div >= 2)  ClkDiv = sclkDiv4;
+    if     (div > 128) ClkDiv = sclkDiv256;
+    else if(div > 64) ClkDiv = sclkDiv128;
+    else if(div > 32) ClkDiv = sclkDiv64;
+    else if(div > 16) ClkDiv = sclkDiv32;
+    else if(div > 8)  ClkDiv = sclkDiv16;
+    else if(div > 4)  ClkDiv = sclkDiv8;
+    else if(div > 2)  ClkDiv = sclkDiv4;
     PSpi->CR1 |= ((uint16_t)ClkDiv) << 3;
     // Bit number
 #if defined STM32L1XX || defined STM32F10X_LD_VL || defined STM32F2XX || defined STM32F4XX || defined STM32F1XX

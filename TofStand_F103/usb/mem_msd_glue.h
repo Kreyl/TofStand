@@ -26,17 +26,6 @@ extern SDCDriver SDCD1;
 #define MSD_BLOCK_SZ    512 // Change this
 
 #elif MSD_USE_INNER_FLASH
-/* Linker script (i.e. rules.ld) must contain section aligned to some page address.
- ***************************************
- *  Here is place to read and write to *
- ***************************************
-SECTIONS {
-    MSDStorage 0x0800E400 :
-    {
-        *(MSDStorage)
-    } > flash0
-}
-*/
 #include "board.h"
 #include "stm32_registry.h"
 // Select page sz
@@ -46,7 +35,8 @@ SECTIONS {
 #define FLASH_PAGE_SIZE     1024UL
 #endif
 // Change this
-#define MSD_STORAGE_SZ_KBYTES   128
+#define MSD_STORAGE_SZ_KBYTES   128UL
+#define MSD_STORAGE_ADDR        (FLASH_START_ADDR + MSD_STORAGE_SZ_KBYTES * 1024UL)
 // Do not touch this
 #define MSD_STORAGE_SZ_BYTES    (1024 * MSD_STORAGE_SZ_KBYTES)
 #define MSD_BLOCK_CNT           (MSD_STORAGE_SZ_BYTES / FLASH_PAGE_SIZE)

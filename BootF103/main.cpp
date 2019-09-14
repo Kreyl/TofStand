@@ -10,7 +10,6 @@
 
 #if 1 // =============== Low level ================
 // Forever
-EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
 static const UartParams_t CmdUartParams(256000, CMD_UART_PARAMS);
 CmdUart_t Uart{&CmdUartParams};
 
@@ -18,14 +17,11 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 // Setup this
 #define FILENAME_PATTERN        "Fw*.bin"
-#define BOOTLOADER_RSRVD_SPACE  0x4000UL    // 16384 bytes for bootloader
+#define BOOTLOADER_RSRVD_SPACE  0x5000UL    // 20480 bytes for bootloader
 #define TOTAL_FLASH_SZ          256000UL
-#define PAGE_SZ                 2048UL      // bytes in page, see datasheet
+#define PAGE_SZ                 2048L      // bytes in page, see datasheet
 // Do not touch
 #define APP_START_ADDR          (FLASH_START_ADDR + BOOTLOADER_RSRVD_SPACE)
-#define APP_START_PAGE          (BOOTLOADER_RSRVD_SPACE / PAGE_SZ)
-#define TOTAL_PAGE_CNT          (TOTAL_FLASH_SZ / PAGE_SZ)
-#define APP_PAGE_CNT            ((TOTAL_FLASH_SZ - BOOTLOADER_RSRVD_SPACE) / PAGE_SZ)
 
 void JumpToApp();
 void ErasePage(uint32_t PageAddr);
@@ -36,7 +32,6 @@ static inline bool AppIsEmpty() {
 }
 
 void OnError() {
-    Iwdg::Reload();
     if(AppIsEmpty()) {
         Led.StartOrRestart(lsqError); // Display error
         while(true);
@@ -50,7 +45,6 @@ uint32_t Buf[(PAGE_SZ / sizeof(uint32_t))];
 
 int main() {
 #if 1 // ==== Init ====
-    Iwdg::InitAndStart(4500);
     // ===== Setup clock =====
     Clk.EnablePrefetch();
     Clk.UpdateFreqValues();
@@ -64,7 +58,6 @@ int main() {
 
     // ==== Init Hard & Soft ====
 //    JtagDisable();
-    EvtQMain.Init();
     Uart.Init();
     AFIO->MAPR |= AFIO_MAPR_USART1_REMAP; // Remap UART to PB6/PB7 pins
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
@@ -73,7 +66,8 @@ int main() {
     FRESULT err;
     err = f_mount(&FlashFS, "", 0);
     if(err != FR_OK) {
-        Printf("FS mount error\r");
+        Printf("FS error\r");
+        chThdSleepMilliseconds(99);
         JumpToApp();
     }
 #endif
@@ -82,10 +76,12 @@ int main() {
     // Try open file, jump to main app if not found
     if(f_findfirst(&Dir, &FileInfo, "", FILENAME_PATTERN) != FR_OK) {
         Printf("File search fail\r");
+        chThdSleepMilliseconds(99);
         OnError();
     }
     if(FileInfo.fname[0] == 0) {
         Printf("%S not found\r", FILENAME_PATTERN);
+        chThdSleepMilliseconds(99);
         OnError();
     }
     Printf("Found: %S\r", FileInfo.fname);
@@ -97,9 +93,7 @@ int main() {
     // ==== Read file block by block, do not write first page ====
     Flash::UnlockFlash();
     uint32_t BytesCnt, CurrentAddr = APP_START_ADDR;
-    int32_t OutputSz;
     while(TotalLen != 0) {
-        Iwdg::Reload();
         // Check flash address
         if(CurrentAddr >= (FLASH_START_ADDR + TOTAL_FLASH_SZ)) {
             Printf("Error: too large file\r");
@@ -116,15 +110,14 @@ int main() {
         }
 
         ErasePage(CurrentAddr);
-        WriteToMemory(&CurrentAddr, Buf, OutputSz);
+        WriteToMemory(&CurrentAddr, Buf, BytesCnt);
     } // while
     Flash::LockFlash();
 #endif
     Printf("\rWriting done\r");
     f_close(&CommonFile);
     // Remove firmware file
-    f_unlink(FileInfo.fname);
-    Iwdg::Reload();
+//    f_unlink(FileInfo.fname);
     JumpToApp();
 
     // Forever

@@ -540,11 +540,11 @@ static uint8_t GetStatus(void) {
 
 uint8_t WaitForLastOperation(systime_t Timeout_st) {
     uint8_t status = retvOk;
+    systime_t Start = chVTGetSystemTimeX();
     // Wait for a Flash operation to complete or a TIMEOUT to occur
     do {
         status = GetStatus();
-        Timeout_st--;
-    } while((status == retvBusy) and (Timeout_st != 0));
+    } while((status == retvBusy) and chVTTimeElapsedSinceX(Start) < Timeout_st);
     if(Timeout_st == 0) status = retvTimeout;
     return status;
 }

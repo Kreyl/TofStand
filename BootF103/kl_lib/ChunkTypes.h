@@ -89,13 +89,13 @@ protected:
 
                 case csGoto:
                     IPCurrentChunk = IPStartChunk + IPCurrentChunk->ChunkToJumpTo;
-                    if(IEvtMsg.ID != evtIdNone) EvtQMain.SendNowOrExitI(IEvtMsg);
+//                    if(IEvtMsg.ID != evtIdNone) EvtQMain.SendNowOrExitI(IEvtMsg);
                     SetupDelay(1);
                     return;
                     break;
 
                 case csEnd:
-                    if(IEvtMsg.ID != evtIdNone) EvtQMain.SendNowOrExitI(IEvtMsg);
+//                    if(IEvtMsg.ID != evtIdNone) EvtQMain.SendNowOrExitI(IEvtMsg);
                     IPStartChunk = nullptr;
                     IPCurrentChunk = nullptr;
                     return;

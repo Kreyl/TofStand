@@ -9,19 +9,6 @@
 #include "uart.h"
 #include "kl_lib.h"
 
-#if MSD_USE_INNER_FLASH
-// Data inside the Flash. Init value is dummy.
-// For some reason "aligned" attribute does not work, therefore array used here.
-#ifdef STM32L4XX
-#define WORD64_CNT     (FLASH_PAGE_SIZE/8)
-__attribute__ ((section("MSDStorage")))
-volatile const uint64_t IData[WORD64_CNT] = { 0xCA115EA1 };
-#else
-__attribute__ ((section("MSDStorage")))
-volatile const uint32_t IData[(MSD_STORAGE_SZ_BYTES/4)] = { 0xCA115EA1 };
-#endif
-#endif
-
 uint8_t MSDRead(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
 //    Printf("RD %u; %u\r", BlockAddress, BlocksCnt);
 #if MSD_USE_SD
@@ -30,7 +17,7 @@ uint8_t MSDRead(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
 #elif MSD_USE_EXT_SPI_FLASH
     Mem.Read(BlockAddress * MSD_BLOCK_SZ, Ptr, BlocksCnt * MSD_BLOCK_SZ);
 #elif MSD_USE_INNER_FLASH
-    uint32_t Addr = (uint32_t)&IData + (BlockAddress * MSD_BLOCK_SZ);
+    uint32_t Addr = MSD_STORAGE_ADDR + (BlockAddress * MSD_BLOCK_SZ);
     memcpy(Ptr, (const void*)Addr, BlocksCnt * MSD_BLOCK_SZ);
 //    Printf("RD %u %X; %u\r", BlockAddress, Addr, BlocksCnt);
 //    Printf("RD %X\r%A\r\r", Addr, (uint8_t*)Addr, (BlocksCnt * MSD_BLOCK_SZ), ' ');
@@ -58,7 +45,7 @@ uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
     }
 #elif MSD_USE_INNER_FLASH
     uint8_t Rslt = retvOk;
-    uint32_t Addr = (uint32_t)&IData + (BlockAddress * MSD_BLOCK_SZ);
+    uint32_t Addr = MSD_STORAGE_ADDR + (BlockAddress * MSD_BLOCK_SZ);
     uint32_t DWordCnt = (BlocksCnt * MSD_BLOCK_SZ) / sizeof(uint32_t);
 #if defined STM32F1XX
 //    Printf("WR %u %X; %u; %u\r", BlockAddress, Addr, BlocksCnt, DWordCnt);
@@ -88,8 +75,8 @@ uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
         }
         Addr += sizeof(uint32_t);
     }
-    chThdSleepMilliseconds(9);
-    Flash::wa
+//    chThdSleepMilliseconds(9); // XXX
+    Flash::WaitForLastOperation(TIME_MS2I(450));
 
     End:
     chSysLock();

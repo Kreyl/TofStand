@@ -28,7 +28,7 @@
 /   3: f_lseek() function is removed in addition to 2. */
 
 
-#define _USE_STRFUNC    1
+#define _USE_STRFUNC    0
 /* This option switches string functions, f_gets(), f_putc(), f_puts() and
 /  f_printf().
 /
@@ -172,8 +172,8 @@
 /  funciton will be available. */
 
 
-#define _MIN_SS         512
-#define _MAX_SS         512
+#define _MIN_SS         2048
+#define _MAX_SS         2048
 /* These options configure the range of sector size to be supported. (512, 1024,
 /  2048 or 4096) Always set both 512 for most systems, all type of memory cards and
 /  harddisk. But a larger value may be required for on-board flash memory and some
@@ -221,7 +221,7 @@
 #define _FS_NORTC       1
 #define _NORTC_MON      1
 #define _NORTC_MDAY     1
-#define _NORTC_YEAR     2018
+#define _NORTC_YEAR     2019
 /* The option _FS_NORTC switches timestamp functiton. If the system does not have
 /  any RTC function or valid timestamp is not needed, set _FS_NORTC = 1 to disable
 /  the timestamp function. All objects modified by FatFs will have a fixed timestamp

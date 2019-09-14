@@ -14,7 +14,7 @@
 // KL
 #undef HAL_USE_RTC
 
-#define BLOCK_SZ    512UL
+#define BLOCK_SZ    _MAX_SS
 #define DISK_SZ     (128UL * 1024UL)
 
 extern void PrintfC(const char *format, ...);
