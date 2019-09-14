@@ -538,14 +538,14 @@ static uint8_t GetStatus(void) {
     else return retvOk;
 }
 
-static uint8_t WaitForLastOperation(systime_t Timeout_st) {
+uint8_t WaitForLastOperation(systime_t Timeout_st) {
     uint8_t status = retvOk;
     // Wait for a Flash operation to complete or a TIMEOUT to occur
     do {
         status = GetStatus();
         Timeout_st--;
-    } while((status == retvBusy) and (Timeout_st != 0x00));
-    if(Timeout_st == 0x00) status = retvTimeout;
+    } while((status == retvBusy) and (Timeout_st != 0));
+    if(Timeout_st == 0) status = retvTimeout;
     return status;
 }
 #endif
@@ -1505,7 +1505,7 @@ void SetupVCore(VCore_t AVCore) {
 #elif defined STM32F1XX
 void Clk_t::UpdateFreqValues() {
     uint32_t tmp;
-    uint32_t SysClkHz;
+    uint32_t SysClkHz = HSI_FREQ_HZ;
     // Tables
     const uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
     const uint8_t APBPrescTable[8] = {0, 0, 0, 0, 1, 2, 3, 4};

@@ -4,14 +4,14 @@
 #include "Sequences.h"
 #include "uart.h"
 #include "shell.h"
-#include "usb_cdc.h"
+#include "usb_msdcdc.h"
 #include "L6470.h"
 #include "led.h"
 
 #if 1 // =============== Low level ================
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
-static const UartParams_t CmdUartParams(115200, CMD_UART_PARAMS);
+static const UartParams_t CmdUartParams(256000, CMD_UART_PARAMS);
 CmdUart_t Uart{&CmdUartParams};
 static void ITask();
 static void OnCmd(Shell_t *PShell);
@@ -63,7 +63,7 @@ int main() {
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-    UsbCDC.Init();
+    UsbMsdCdc.Init();
     PinSetupAnalog(USB_PULLUP);
     PinSetupInput(USB_DETECT_PIN, pudPullDown); // Usb detect pin
 
@@ -122,16 +122,16 @@ void ITask() {
 
             case evtIdBusyFlagHi:
                 PrintfI("Ready\r\n");
-                if(UsbCDC.IsActive()) UsbCDC.Print("Ready\r\n");
+                UsbMsdCdc.Print("Ready\r\n");
                 break;
 
 #if 1 // ======= USB =======
             case evtIdUsbConnect:
                 Printf("USB connect\r");
-                UsbCDC.Connect();
+                UsbMsdCdc.Connect();
                 break;
             case evtIdUsbDisconnect:
-                UsbCDC.Disconnect();
+                UsbMsdCdc.Disconnect();
                 Printf("USB disconnect\r");
                 break;
             case evtIdUsbReady:
@@ -159,18 +159,18 @@ void BusyHandler() {
 void OnCmd(Shell_t *PShell) {
     Cmd_t *PCmd = &PShell->Cmd;
 //    Printf("%S  ", PCmd->Name);
-
-    // Handle command
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
+    else if(PCmd->NameIs("mem")) PrintMemoryInfo();
 
     else if(PCmd->NameIs("in")) {
-        if(EndstopBottom.IsHi()) Printf("Bottom Hi\r");
-        else Printf("Bottom Lo\r");
-        if(EndstopTop.IsHi()) Printf("Top Hi\r");
-        else Printf("Top Lo\r");
+        if(EndstopBottom.IsHi()) PShell->Print("Bottom Hi\r");
+        else PShell->Print("Bottom Lo\r");
+        if(EndstopTop.IsHi()) PShell->Print("Top Hi\r");
+        else PShell->Print("Top Lo\r");
     }
 
+#if 1 // ==== Motor control ====
     else if(PCmd->NameIs("Down")) {
 //        Motor.SwitchLoHi();
         // Check if top endstop reched
@@ -210,25 +210,26 @@ void OnCmd(Shell_t *PShell) {
         Motor.SetCurrent4Hold(FCurr);
         PShell->Ack(retvOk);
     }
+#endif
 
 #if 1 // ==== Read/Write regs ====
     else if(PCmd->NameIs("Get8")) {
         uint8_t Addr = 0;
         if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
         uint32_t Value = Motor.GetParam8(Addr);
-        Printf("%u  0x%X\r", Value, Value);
+        PShell->Print("%u  0x%X\r", Value, Value);
     }
     else if(PCmd->NameIs("Get16")) {
         uint8_t Addr = 0;
         if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
         uint32_t Value = Motor.GetParam16(Addr);
-        Printf("%u  0x%X\r", Value, Value);
+        PShell->Print("%u  0x%X\r", Value, Value);
     }
     else if(PCmd->NameIs("Get32")) {
         uint8_t Addr = 0;
         if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
         uint32_t Value = Motor.GetParam32(Addr);
-        Printf("%u  0x%X\r", Value, Value);
+        PShell->Print("%u  0x%X\r", Value, Value);
     }
 
     else if(PCmd->NameIs("Set8")) {
@@ -250,7 +251,7 @@ void OnCmd(Shell_t *PShell) {
 #endif
 
     else {
-        Printf("%S\r\n", PCmd->Name);
+        PShell->Print("%S\r\n", PCmd->Name);
 //        if(UsbCDC.IsActive()) UsbCDC.Print("%S\r\n", PCmd->Name);
         PShell->Ack(retvCmdUnknown);
     }

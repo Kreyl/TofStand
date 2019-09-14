@@ -1408,10 +1408,13 @@ public:
 #endif
 
 // =========================== Flash and Option bytes ==========================
+#define FLASH_START_ADDR 0x08000000
 namespace Flash {
 
 void UnlockFlash();
 void LockFlash();
+void ClearPendingFlags();
+uint8_t WaitForLastOperation(systime_t Timeout_st);
 
 uint8_t ErasePage(uint32_t PageAddress);
 #if defined STM32L4XX
