@@ -75,7 +75,6 @@ uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
         }
         Addr += sizeof(uint32_t);
     }
-//    chThdSleepMilliseconds(9); // XXX
     Flash::WaitForLastOperation(TIME_MS2I(450));
 
     End:

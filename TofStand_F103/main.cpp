@@ -38,10 +38,10 @@ int main() {
     Clk.EnablePrefetch();
     if(Clk.EnableHSE() == retvOk) {
         Clk.SetupPLLSrc(pllSrcPrediv);
-        Clk.SetupFlashLatency(48);
+        Clk.SetupFlashLatency(24);
         // 12MHz * 4 = 48MHz
         if(Clk.SetupPllMulDiv(pllMul4, preDiv1) == retvOk) {
-            Clk.SetupBusDividers(ahbDiv1, apbDiv2, apbDiv1);
+            Clk.SetupBusDividers(ahbDiv2, apbDiv1, apbDiv1);
             if(Clk.EnablePLL() == retvOk) Clk.SwitchToPLL();
             Clk.SetUsbPrescalerTo1(); // This bit must be valid before enabling the USB clock in the RCC_APB1ENR register
         }
@@ -168,6 +168,10 @@ void OnCmd(Shell_t *PShell) {
         else PShell->Print("Bottom Lo\r");
         if(EndstopTop.IsHi()) PShell->Print("Top Hi\r");
         else PShell->Print("Top Lo\r");
+    }
+
+    else if(PCmd->NameIs("Rst")) {
+        REBOOT();
     }
 
 #if 1 // ==== Motor control ====

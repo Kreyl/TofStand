@@ -24,8 +24,10 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 #define APP_START_ADDR          (FLASH_START_ADDR + BOOTLOADER_RSRVD_SPACE)
 
 void JumpToApp();
+extern "C" { // used in fatfs_diskio.c
 void ErasePage(uint32_t PageAddr);
 void WriteToMemory(uint32_t *PAddr, uint32_t *PBuf, uint32_t ALen);
+}
 static inline bool AppIsEmpty() {
     uint32_t FirstWord = *(uint32_t*)APP_START_ADDR;
     return (FirstWord == 0xFFFFFFFF);
@@ -87,11 +89,11 @@ int main() {
     Printf("Found: %S\r", FileInfo.fname);
     if(TryOpenFileRead(FileInfo.fname, &CommonFile) != retvOk) OnError();
     int32_t TotalLen = f_size(&CommonFile);
+    Flash::UnlockFlash();
 #endif
 #if 1 // ======= Reading and flashing =======
     Led.StartOrRestart(lsqWriting);
     // ==== Read file block by block, do not write first page ====
-    Flash::UnlockFlash();
     uint32_t BytesCnt, CurrentAddr = APP_START_ADDR;
     while(TotalLen != 0) {
         // Check flash address
@@ -112,12 +114,12 @@ int main() {
         ErasePage(CurrentAddr);
         WriteToMemory(&CurrentAddr, Buf, BytesCnt);
     } // while
-    Flash::LockFlash();
 #endif
     Printf("\rWriting done\r");
     f_close(&CommonFile);
     // Remove firmware file
-//    f_unlink(FileInfo.fname);
+    f_unlink(FileInfo.fname);
+    Flash::LockFlash();
     JumpToApp();
 
     // Forever
@@ -143,6 +145,7 @@ void JumpToApp() {
     chSysUnlock();
 }
 
+extern "C" {
 void ErasePage(uint32_t PageAddr) {
     if(Flash::ErasePage(PageAddr) != retvOk) {
         Printf("\rErase fail\r");
@@ -154,12 +157,14 @@ void ErasePage(uint32_t PageAddr) {
 void WriteToMemory(uint32_t *PAddr, uint32_t *PBuf, uint32_t ALen) {
     uint32_t Word32Cnt = (ALen + 3) / 4;
     for(uint32_t i=0; i<Word32Cnt; i++) {
-        if(Flash::ProgramWord(*PAddr, Buf[i]) != retvOk) {
+        if(Flash::ProgramWord(*PAddr, PBuf[i]) != retvOk) {
             Printf("Write Fail\r");
             chThdSleepMilliseconds(450);
             REBOOT();
         }
         *PAddr = *PAddr + 4;
     }
+    Flash::WaitForLastOperation(TIME_MS2I(450));
     Printf(".");
 }
+} // extern C

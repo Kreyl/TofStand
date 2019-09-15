@@ -14,8 +14,9 @@
 // KL
 #undef HAL_USE_RTC
 
-#define BLOCK_SZ    _MAX_SS
-#define DISK_SZ     (128UL * 1024UL)
+#define FLASH_STORAGE_ADDR  0x08020000
+#define BLOCK_SZ            _MAX_SS
+#define DISK_SZ             (128UL * 1024UL)
 
 extern void PrintfC(const char *format, ...);
 
@@ -48,25 +49,35 @@ DRESULT disk_read (
     BYTE count        /* Number of sectors to read (1..255) */
 )
 {
-    uint32_t Addr = 0x08020000 + (sector * BLOCK_SZ);
+    uint32_t Addr = FLASH_STORAGE_ADDR + (sector * BLOCK_SZ);
     memcpy(buff, (const void*)Addr, count * BLOCK_SZ);
     return RES_OK;
 }
 
 /*-----------------------------------------------------------------------*/
 /* Write Sector(s)                                                       */
+void ErasePage(uint32_t PageAddr);
+void WriteToMemory(uint32_t *PAddr, uint32_t *PBuf, uint32_t ALen);
+
+static uint32_t IBuf[(BLOCK_SZ / sizeof(uint32_t))];
 
 #if _READONLY == 0
 DRESULT disk_write (
     BYTE drv,            /* Physical drive nmuber (0..) */
     const BYTE *buff,    /* Data to be written */
     DWORD sector,        /* Sector address (LBA) */
-    BYTE count            /* Number of sectors to write (1..255) */
+    BYTE count           /* Number of sectors to write (1..255) */
 )
 {
 //    PrintfC("\r__DiskW");
-//    if (blkGetDriverState(&SDCD1) != BLK_READY) return RES_NOTRDY;
-//    if (SDWrite(sector, buff, count)) return RES_ERROR;
+    uint32_t Addr = FLASH_STORAGE_ADDR + (sector * BLOCK_SZ);
+    while(count > 0) {
+        ErasePage(Addr);
+        memcpy(IBuf, buff, BLOCK_SZ);
+        WriteToMemory(&Addr, IBuf, BLOCK_SZ);
+        buff += BLOCK_SZ;
+        count--;
+    }
     return RES_OK;
 }
 #endif /* _READONLY */
