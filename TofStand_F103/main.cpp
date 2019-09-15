@@ -23,7 +23,7 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 L6470_t Motor{M_SPI};
 #define STEPS_IN_STAND  450000
-#define DEFAULT_CURR    15
+#define DEFAULT_CURR    81
 
 void EndstopHandler();
 PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
