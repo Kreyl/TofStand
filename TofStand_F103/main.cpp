@@ -22,8 +22,9 @@ static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 L6470_t Motor{M_SPI};
-#define STEPS_IN_STAND  450000
-#define DEFAULT_CURR    81
+#define STEPS_IN_STAND  1000008
+#define DEFAULT_CURR    18
+#define START_SPEED     27000
 
 void EndstopHandler();
 PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
@@ -87,7 +88,7 @@ int main() {
 
     chThdSleepMilliseconds(720); // Let power to stabilize
     // Go top if not yet
-    if(!EndstopTop.IsHi()) Motor.Move(dirForward, 54000, STEPS_IN_STAND);
+    if(!EndstopTop.IsHi()) Motor.Move(dirForward, START_SPEED, STEPS_IN_STAND);
 
     TmrOneSecond.StartOrRestart();
 

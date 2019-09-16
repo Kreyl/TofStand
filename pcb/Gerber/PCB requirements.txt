@@ -1,0 +1,10 @@
+Material: standard FR4
+Layers: 2
+Dimensions: 38.2mm x 72.9mm
+Thickness: 1.6mm 
+Color: Green
+Surface Finish: HASL
+Copper Weight: 1oz
+
+Gold Fingers: no
+Castellated Holes: no
