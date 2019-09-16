@@ -23,7 +23,7 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 L6470_t Motor{M_SPI};
 #define STEPS_IN_STAND  1000008
-#define DEFAULT_CURR    18
+#define DEFAULT_CURR    90
 #define START_SPEED     27000
 
 void EndstopHandler();
@@ -213,6 +213,22 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<uint8_t>(&FCurr) != retvOk) { PShell->Ack(retvCmdError); return; }
         Motor.SetCurrent4Run(FCurr);
         Motor.SetCurrent4Hold(FCurr);
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("SetAcc")) {
+        uint16_t FAcc = 0, FDec = 0;
+        if(PCmd->GetNext<uint16_t>(&FAcc) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint16_t>(&FDec) != retvOk) { FDec = FAcc; }
+        Motor.SetAcceleration(FAcc);
+        Motor.SetDeceleration(FDec);
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("SetStep")) {
+        uint8_t FMode = 0;
+        if(PCmd->GetNext<uint8_t>(&FMode) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetStepMode((StepMode_t)FMode);
         PShell->Ack(retvOk);
     }
 #endif
