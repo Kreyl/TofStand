@@ -7,6 +7,8 @@
 #include "usb_msdcdc.h"
 #include "L6470.h"
 #include "led.h"
+#include "ff.h"
+#include "kl_fs_utils.h"
 
 #if 1 // =============== Low level ================
 // Forever
@@ -23,8 +25,6 @@ LedBlinker_t Led(GPIOB, 2, omPushPull);
 
 L6470_t Motor{M_SPI};
 #define STEPS_IN_STAND  1000008
-#define DEFAULT_CURR    90
-#define START_SPEED     27000
 
 void EndstopHandler();
 PinIrq_t EndstopTop{ENDSTOP2, pudPullDown, EndstopHandler};
@@ -32,6 +32,17 @@ PinIrq_t EndstopBottom{ENDSTOP1, pudPullDown, EndstopHandler};
 
 void BusyHandler();
 PinIrq_t Busy{M_AUX_GPIO, M_BUSY_SYNC1, pudPullUp, BusyHandler};
+
+// Filesystem etc.
+FATFS FlashFS;
+#define SETTINGS_FNAME      "Settings.ini"
+struct Settings_t {
+    uint32_t Acceleration = 1200, Deceleration = 12000;
+    StepMode_t StepMode = sm128;
+    uint32_t Current4Run = 18, Current4Hold = 18;
+    uint32_t StartSpeed = 27000;
+    void Load();
+} Settings;
 #endif
 
 int main() {
@@ -57,12 +68,17 @@ int main() {
     Led.On();
 
     // ==== Init Hard & Soft ====
-//    JtagDisable();
     EvtQMain.Init();
     Uart.Init();
     AFIO->MAPR |= AFIO_MAPR_USART1_REMAP; // Remap UART to PB6/PB7 pins
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
+
+    // Init filesystem
+    FRESULT err;
+    err = f_mount(&FlashFS, "", 0);
+    if(err == FR_OK) Settings.Load();
+    else Printf("FS error\r");
 
     UsbMsdCdc.Init();
     PinSetupAnalog(USB_PULLUP);
@@ -70,12 +86,12 @@ int main() {
 
     // Motor
     Motor.Init();
-    Motor.SetAcceleration(1200);
-    Motor.SetDeceleration(12000);
-    Motor.SetStepMode(sm128);
+    Motor.SetAcceleration(Settings.Acceleration);
+    Motor.SetDeceleration(Settings.Deceleration);
+    Motor.SetStepMode(Settings.StepMode);
     // Current
-    Motor.SetCurrent4Run(DEFAULT_CURR);
-    Motor.SetCurrent4Hold(DEFAULT_CURR);
+    Motor.SetCurrent4Run(Settings.Current4Run);
+    Motor.SetCurrent4Hold(Settings.Current4Hold);
     Motor.StopSoftAndHold();
 
     // Endstops
@@ -88,7 +104,7 @@ int main() {
 
     chThdSleepMilliseconds(720); // Let power to stabilize
     // Go top if not yet
-    if(!EndstopTop.IsHi()) Motor.Move(dirForward, START_SPEED, STEPS_IN_STAND);
+    if(!EndstopTop.IsHi()) Motor.Move(dirForward, Settings.StartSpeed, STEPS_IN_STAND);
 
     TmrOneSecond.StartOrRestart();
 
@@ -156,6 +172,28 @@ void BusyHandler() {
     EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdBusyFlagHi));
 }
 
+
+void Settings_t::Load() {
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Acceleration", &Settings.Acceleration);
+    if(Settings.Acceleration > 0xFFFF) Settings.Acceleration = 1200;
+
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Deceleration", &Settings.Deceleration);
+    if(Settings.Acceleration > 0xFFFF) Settings.Acceleration = 12000;
+
+    uint32_t tmp = 7;
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StepMode", &tmp);
+    if(tmp > 7) tmp = 7;
+    Settings.StepMode = (StepMode_t)tmp;
+
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Run", &Settings.Current4Run);
+    if(Settings.Current4Run > 0xFF) Settings.Current4Run = 18;
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Hold", &Settings.Current4Hold);
+    if(Settings.Current4Hold > 0xFF) Settings.Current4Hold = 18;
+
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StartSpeed", &Settings.StartSpeed);
+    if(Settings.StartSpeed > 90000) Settings.Current4Hold = 90000;
+}
+
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
     Cmd_t *PCmd = &PShell->Cmd;
@@ -213,22 +251,6 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<uint8_t>(&FCurr) != retvOk) { PShell->Ack(retvCmdError); return; }
         Motor.SetCurrent4Run(FCurr);
         Motor.SetCurrent4Hold(FCurr);
-        PShell->Ack(retvOk);
-    }
-
-    else if(PCmd->NameIs("SetAcc")) {
-        uint16_t FAcc = 0, FDec = 0;
-        if(PCmd->GetNext<uint16_t>(&FAcc) != retvOk) { PShell->Ack(retvCmdError); return; }
-        if(PCmd->GetNext<uint16_t>(&FDec) != retvOk) { FDec = FAcc; }
-        Motor.SetAcceleration(FAcc);
-        Motor.SetDeceleration(FDec);
-        PShell->Ack(retvOk);
-    }
-
-    else if(PCmd->NameIs("SetStep")) {
-        uint8_t FMode = 0;
-        if(PCmd->GetNext<uint8_t>(&FMode) != retvOk) { PShell->Ack(retvCmdError); return; }
-        Motor.SetStepMode((StepMode_t)FMode);
         PShell->Ack(retvOk);
     }
 #endif
