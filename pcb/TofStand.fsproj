@@ -3,9 +3,9 @@
 <!--   File    : TofStand.fsproj            -->
 <!--   Format  : TopoR Project file         -->
 <!--   Version : 2                          -->
-<!--   Program : TopoR Lite 7.0.18578       -->
-<!--   Date    : Monday, September 16, 2019 -->
-<!--   Time    : 05:04                      -->
+<!--   Program : TopoR 8 Layer 7.0.18661    -->
+<!--   Date    : Sunday, September 22, 2019 -->
+<!--   Time    : 23:54                      -->
 <!--****************************************-->
 
 <Project>
@@ -13,7 +13,7 @@
    <GUID>{727828E9-0D35-4128-99ED-9D5C41D9ED76}</GUID>
    <Documents>
       <Section name="PCB" isExpanded="true">
-         <File path=".\TofStand.fsx" isopened="1" dateChange="2019-09-15 20:43:06"/>
+         <File path=".\TofStand.fsx" isopened="1" dateChange="2019-09-15 20:55:53"/>
       </Section>
       <Section name="AutoRouting" isExpanded="false"/>
    </Documents>
