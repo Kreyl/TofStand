@@ -4,3 +4,7 @@ TofStand_fw/Debug/
 pcb/TofStand.dsn
 pcb/TofStand.kicad_pcb-bak
 pcb/TofStand.ses
+Docs/StationDebug_V1.3/
+*.sch-bak
+pcb/pcb.zip
+pcb/Gerber/TofStand_F205.pdf

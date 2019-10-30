@@ -391,17 +391,11 @@
 		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.configuration.release.559064185;com.atollic.truestudio.configuration.release.559064185.;com.atollic.truestudio.exe.release.toolchain.gcc.1540688127;com.atollic.truestudio.gcc.input.1016710665">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileC"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.configuration.release.559064185.2022184195;com.atollic.truestudio.configuration.release.559064185.2022184195.;com.atollic.truestudio.exe.release.toolchain.gpp.1595878506;com.atollic.truestudio.gpp.input.89066116">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileCPP"/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.exe.debug.1405052703;com.atollic.truestudio.exe.debug.1405052703.;com.atollic.truestudio.exe.debug.toolchain.gcc.998423009;com.atollic.truestudio.gcc.input.470840003">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.exe.debug.1405052703;com.atollic.truestudio.exe.debug.1405052703.;com.atollic.truestudio.exe.debug.toolchain.gpp.1820324997;com.atollic.truestudio.gpp.input.464645216">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileCPP"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.configuration.release.559064185.2022184195;com.atollic.truestudio.configuration.release.559064185.2022184195.;com.atollic.truestudio.exe.release.toolchain.gcc.734624605;com.atollic.truestudio.gcc.input.1491569321">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.atollic.truestudio.configuration.release.559064185;com.atollic.truestudio.configuration.release.559064185.;com.atollic.truestudio.exe.release.toolchain.gpp.1089179726;com.atollic.truestudio.gpp.input.1801550346">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.atollic.truestudio.mbs.ARMToolsPerProjectProfileCPP"/>
