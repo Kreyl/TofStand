@@ -1,4 +1,4 @@
-732636774066161
+737410353310998
 Antennas
 ANT_868_10d4x36
 PCB{space}75.7x37.5,{space}AntPcb{space}14.8mm
@@ -1211,6 +1211,13 @@ USB{space}conn{space}type{space}B:{space}USBB-1J
 5
 5
 Connectors
+USB_C_MOLEX_1054500101
+
+
+0
+28
+28
+Connectors
 USBmicro_MOLEX_1050170001
 
 
@@ -1357,6 +1364,20 @@ uUSB_Micro5P
 0
 7
 7
+DIP
+DIP-8_296_ELL
+
+
+0
+8
+8
+DIP
+DIP-16_296_ELL
+
+
+0
+16
+16
 Diodes
 SMA_DO214AC
 
@@ -1404,8 +1425,8 @@ Display
 
 
 0
-0
-0
+36
+36
 Display
 Round2_2
 

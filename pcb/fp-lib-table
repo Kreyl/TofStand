@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "DIP")(type "KiCad")(uri "${KICAD_SYMBOL_DIR}/DIP.pretty")(options "")(descr ""))
+)

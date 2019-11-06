@@ -1,6 +1,19 @@
 EESchema-LIBRARY Version 2.4
 #encoding utf-8
 #
+# Connectors_kl_CONN_1
+#
+DEF Connectors_kl_CONN_1 XL 0 40 Y N 1 F N
+F0 "XL" -50 10 40 V V C CNN
+F1 "Connectors_kl_CONN_1" 10 20 40 V V C CNN
+F2 "" 0 0 60 H V C CNN
+F3 "" 0 0 60 H V C CNN
+DRAW
+S -100 -150 50 150 0 1 0 f
+X P1 1 -200 0 100 R 60 60 1 1 P
+ENDDRAW
+ENDDEF
+#
 # Connectors_kl_CONN_2
 #
 DEF Connectors_kl_CONN_2 XL 0 40 Y N 1 F N
@@ -180,11 +193,11 @@ X PAD S2 -700 -700 200 R 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# Connectors_kl_USB_MICRO_2H
+# Connectors_kl_USB_MICRO_4H
 #
-DEF Connectors_kl_USB_MICRO_2H XL 0 40 Y Y 1 F N
+DEF Connectors_kl_USB_MICRO_4H XL 0 40 Y Y 1 F N
 F0 "XL" -200 450 60 H V C CNN
-F1 "Connectors_kl_USB_MICRO_2H" -100 350 60 H V C CNN
+F1 "Connectors_kl_USB_MICRO_4H" -100 350 60 H V C CNN
 F2 "" 0 0 60 H V C CNN
 F3 "" 0 0 60 H V C CNN
 $FPLIST
@@ -192,6 +205,8 @@ $FPLIST
 $ENDFPLIST
 DRAW
 S 0 -300 -400 300 0 1 0 f
+X ~ H3 -150 -500 200 U 50 50 0 1 P
+X ~ H4 -50 -500 200 U 50 50 0 1 P
 X UVcc 1 200 200 200 L 50 50 1 1 w
 X D- 2 200 100 200 L 50 50 1 1 P
 X D+ 3 200 0 200 L 50 50 1 1 P
