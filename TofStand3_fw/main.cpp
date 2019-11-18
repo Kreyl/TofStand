@@ -8,8 +8,7 @@
 #include "buttons.h"
 #include "PinSnsSettings.h"
 #include "7segment.h"
-//#include "LoadCtrl.h"
-//#include "AnaSns.h"
+#include "L6470.h"
 
 #if 1 // =============== Defines ================
 // Forever
@@ -22,7 +21,17 @@ static void OnCmd(Shell_t *PShell);
 static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 LedBlinker_t Led{LED_PIN, omPushPull};
+L6470_t Motor{M_SPI};
+#define STEPS_IN_STAND  1000008
 
+#define SETTINGS_FNAME      "Settings.ini"
+struct Settings_t {
+    uint32_t Acceleration = 1200, Deceleration = 12000;
+    StepMode_t StepMode = smFull; //sm128;
+    uint32_t Current4Run = 18, Current4Hold = 18;
+    uint32_t StartSpeed = 27000;
+    void Load();
+} Settings;
 #endif
 
 int main() {
@@ -46,6 +55,16 @@ int main() {
     SegmentInit();
 
     SimpleSensors::Init(); // Buttons
+
+    // Motor
+    Motor.Init();
+    Motor.SetAcceleration(Settings.Acceleration);
+    Motor.SetDeceleration(Settings.Deceleration);
+    Motor.SetStepMode(Settings.StepMode);
+    // Current
+    Motor.SetCurrent4Run(Settings.Current4Run);
+    Motor.SetCurrent4Hold(Settings.Current4Hold);
+    Motor.StopSoftAndHold();
 
 //    TmrOneSecond.StartOrRestart();
 
@@ -97,6 +116,110 @@ void OnCmd(Shell_t *PShell) {
         SegmentShow(v1, v2, v3, v4, pointmsk);
         PShell->Ack(retvOk);
     }
+
+    else if(PCmd->NameIs("Rst")) {
+        REBOOT();
+    }
+
+#if 1 // ==== Motor control ====
+    else if(PCmd->NameIs("MRst")) {
+        Motor.Reset();
+        Motor.SetAcceleration(Settings.Acceleration);
+        Motor.SetDeceleration(Settings.Deceleration);
+        Motor.SetStepMode(Settings.StepMode);
+        // Current
+        Motor.SetCurrent4Run(Settings.Current4Run);
+        Motor.SetCurrent4Hold(Settings.Current4Hold);
+        Motor.StopSoftAndHold();
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("Down")) {
+//        Motor.SwitchLoHi();
+        // Check if top endstop reched
+//        if(EndstopBottom.IsHi()) { PShell->Ack(retvBadState); return; }
+        uint32_t ISteps = STEPS_IN_STAND, ISpd = SPD_MAX;
+        PCmd->GetNext<uint32_t>(&ISpd); // May absent
+        PCmd->GetNext<uint32_t>(&ISteps); // May absent
+        if(ISteps == 0)    { PShell->Ack(retvBadValue); return; }
+        if(ISpd == 0)      { PShell->Ack(retvBadValue); return; }
+        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
+        Motor.Move(dirReverse, ISpd, ISteps);
+        PShell->Ack(retvOk);
+    }
+    else if(PCmd->NameIs("Up")) {
+//        Motor.SwitchLoHi();
+        // Check if top endstop reched
+//        if(EndstopTop.IsHi()) { PShell->Ack(retvBadState); return; }
+        uint32_t ISteps = STEPS_IN_STAND, ISpd = SPD_MAX;
+        PCmd->GetNext<uint32_t>(&ISpd); // May absent
+        PCmd->GetNext<uint32_t>(&ISteps); // May absent
+        if(ISteps == 0)    { PShell->Ack(retvBadValue); return; }
+        if(ISpd == 0)      { PShell->Ack(retvBadValue); return; }
+        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
+        Motor.Move(dirForward, ISpd, ISteps);
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("Stop")) {
+        Motor.StopSoftAndHold();
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("SetCur")) {
+        uint8_t FCurr = 0;
+        if(PCmd->GetNext<uint8_t>(&FCurr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetCurrent4Run(FCurr);
+        Motor.SetCurrent4Hold(FCurr);
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("SetSM")) {
+        uint8_t FSm = 0;
+        if(PCmd->GetNext<uint8_t>(&FSm) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(FSm > 7) FSm = 7;
+        Motor.SetStepMode((StepMode_t)FSm);
+        PShell->Ack(retvOk);
+    }
+#endif
+
+#if 1 // ==== Read/Write regs ====
+    else if(PCmd->NameIs("Get8")) {
+        uint8_t Addr = 0;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t Value = Motor.GetParam8(Addr);
+        PShell->Print("%u  0x%X\r", Value, Value);
+    }
+    else if(PCmd->NameIs("Get16")) {
+        uint8_t Addr = 0;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t Value = Motor.GetParam16(Addr);
+        PShell->Print("%u  0x%X\r", Value, Value);
+    }
+    else if(PCmd->NameIs("Get32")) {
+        uint8_t Addr = 0;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        uint32_t Value = Motor.GetParam32(Addr);
+        PShell->Print("%u  0x%X\r", Value, Value);
+    }
+
+    else if(PCmd->NameIs("Set8")) {
+        uint8_t Addr = 0;
+        uint32_t Value;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint32_t>(&Value) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetParam8(Addr, Value);
+        PShell->Ack(retvOk);
+    }
+    else if(PCmd->NameIs("Set16")) {
+        uint8_t Addr = 0;
+        uint32_t Value;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint32_t>(&Value) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetParam16(Addr, Value);
+        PShell->Ack(retvOk);
+    }
+#endif
 
     else {
         Printf("%S\r\n", PCmd->Name);

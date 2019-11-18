@@ -54,6 +54,22 @@
 #define SEG_DRV_LE      GPIOB, 12
 #define SEG_DRV_OE      GPIOB, 14
 
+#if 1 // ==== L6470 ====
+#define M_SPI           SPI1
+#define M_SPI_GPIO      GPIOA
+#define M_SCK           5
+#define M_MISO          6
+#define M_MOSI          7
+#define M_CS            8
+#define M_SPI_AF        AF5
+
+#define M_AUX_GPIO      GPIOC
+#define M_BUSY_SYNC1    3
+#define M_SW1           4
+#define M_FLAG1         5
+#define M_STBY_RST      2
+#endif
+
 #endif // GPIO
 
 #if 1 // =========================== SPI =======================================
