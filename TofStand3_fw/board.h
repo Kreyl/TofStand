@@ -29,7 +29,7 @@
 #define SIMPLESENSORS_ENABLED   TRUE
 #define BUTTONS_ENABLED         TRUE
 
-#define ADC_REQUIRED            TRUE
+#define ADC_REQUIRED            FALSE
 
 #if 1 // ========================== GPIO =======================================
 // EXTI
@@ -40,45 +40,24 @@
 #define UART_TX_PIN     6
 #define UART_RX_PIN     7
 
-// LEDs
-#define LED_CNT         8
-#define LED1_PIN        GPIOC, 4
-#define LED2_PIN        GPIOC, 5
-#define LED3_PIN        GPIOC, 6
-#define LED4_PIN        GPIOC, 7
-#define LED5_PIN        GPIOC, 8
-#define LED6_PIN        GPIOC, 9
-#define LED7_PIN        GPIOC, 10
-#define LED8_PIN        GPIOC, 11
+// LED
+#define LED_PIN         GPIOB, 8
 
 // Buttons
-#define BTN1_PIN        GPIOC, 0, pudPullUp
-#define BTN2_PIN        GPIOC, 1, pudPullUp
-#define BTN3_PIN        GPIOC, 2, pudPullUp
-#define BTN4_PIN        GPIOC, 3, pudPullUp
+#define BTN_UP_PIN      GPIOB, 0, pudPullDown
+#define BTN_DOWN_PIN    GPIOB, 1, pudPullDown
+#define BTN_FAST_PIN    GPIOB, 2, pudPullDown
 
 // 7 segment
-#define LED_MOSI        GPIOB, 15, omPushPull, pudNone, AF5
-#define LED_CLK         GPIOB, 13, omPushPull, pudNone, AF5
-#define LED_DRV_LE      GPIOB, 12
-#define LED_DRV_OE      GPIOB, 14
-
-// Load
-#define LOAD_SRCLK      GPIOA, 5
-#define LOAD_SER        GPIOA, 7
-#define LOAD_SRCLR      GPIOA, 8
-#define LOAD_RCLK       GPIOB, 10
-#define LOAD_AF         AF5
-
-// Measurement
-#define VBUS_VOLTAGE    GPIOA, 4
-#define VBUS_CURRENT    GPIOA, 6
+#define SEG_MOSI        GPIOB, 15, omPushPull, pudNone, AF5
+#define SEG_CLK         GPIOB, 13, omPushPull, pudNone, AF5
+#define SEG_DRV_LE      GPIOB, 12
+#define SEG_DRV_OE      GPIOB, 14
 
 #endif // GPIO
 
 #if 1 // =========================== SPI =======================================
-#define LOAD_SPI        SPI1
-#define LEDS_SPI        SPI2
+#define SEGS_SPI        SPI2
 #endif
 
 #if I2C2_ENABLED // ====================== I2C ================================
@@ -115,21 +94,10 @@
 #define UART_DMA_RX_MODE(Chnl) (STM32_DMA_CR_CHSEL(Chnl) | DMA_PRIORITY_MEDIUM | STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE | STM32_DMA_CR_MINC | STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_CIRC)
 
 // ==== SPI ====
-#define LEDS_SPI_DMA_TX STM32_DMA_STREAM_ID(1, 4)
-#define LEDS_DMA_TX_CHNL   0
-#define LEDS_DMA_TX_MODE  \
-        (STM32_DMA_CR_CHSEL(LEDS_DMA_TX_CHNL) | \
-        DMA_PRIORITY_LOW |     \
-        STM32_DMA_CR_MSIZE_BYTE | \
-        STM32_DMA_CR_PSIZE_BYTE | \
-        STM32_DMA_CR_TCIE | \
-        STM32_DMA_CR_MINC |    /* Mem pointer increase */  \
-        STM32_DMA_CR_DIR_M2P   /* Mem to peripheral */ )
-
-#define LOAD_SPI_DMA_TX STM32_DMA_STREAM_ID(2, 3)
-#define LOAD_DMA_TX_CHNL   3
-#define LOAD_DMA_TX_MODE  \
-        (STM32_DMA_CR_CHSEL(LOAD_DMA_TX_MODE) | \
+#define SEGS_SPI_DMA_TX STM32_DMA_STREAM_ID(1, 4)
+#define SEGS_DMA_TX_CHNL   0
+#define SEGS_DMA_TX_MODE  \
+        (STM32_DMA_CR_CHSEL(SEGS_DMA_TX_CHNL) | \
         DMA_PRIORITY_LOW |     \
         STM32_DMA_CR_MSIZE_BYTE | \
         STM32_DMA_CR_PSIZE_BYTE | \

@@ -7,7 +7,7 @@
 #include "led.h"
 #include "buttons.h"
 #include "PinSnsSettings.h"
-//#include "7segment.h"
+#include "7segment.h"
 //#include "LoadCtrl.h"
 //#include "AnaSns.h"
 
@@ -21,16 +21,7 @@ static void OnCmd(Shell_t *PShell);
 
 static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
-//LedBlinker_t Led[LED_CNT] = {
-//        {LED1_PIN, omPushPull},
-//        {LED2_PIN, omPushPull},
-//        {LED3_PIN, omPushPull},
-//        {LED4_PIN, omPushPull},
-//        {LED5_PIN, omPushPull},
-//        {LED6_PIN, omPushPull},
-//        {LED7_PIN, omPushPull},
-//        {LED8_PIN, omPushPull},
-//};
+LedBlinker_t Led{LED_PIN, omPushPull};
 
 #endif
 
@@ -50,14 +41,11 @@ int main() {
     Clk.PrintFreqs();
 
     // LEDs
-//    for(LedBlinker_t &FLed : Led) {
-//        FLed.Init();
-//        FLed.StartOrRestart(lsqBlink);
-//        chThdSleepMilliseconds(72);
-//    }
-//    Led[0].On();
+    Led.Init();
+    Led.StartOrRestart(lsqCmd);
+    SegmentInit();
 
-//    SimpleSensors::Init(); // Buttons
+    SimpleSensors::Init(); // Buttons
 
 //    TmrOneSecond.StartOrRestart();
 
@@ -72,11 +60,11 @@ void ITask() {
 //        Printf("Msg.ID %u\r", Msg.ID);
         switch(Msg.ID) {
             case evtIdButtons:
-//                Printf("Btn %u; %u\r", Msg.BtnEvtInfo.Type, Msg.BtnEvtInfo.BtnID);
+                Printf("Btn %u; %u\r", Msg.BtnEvtInfo.Type, Msg.BtnEvtInfo.BtnID);
                 break;
 
             case evtIdShellCmd:
-//                Led[0].StartOrContinue(lsqCmd);
+                Led.StartOrContinue(lsqCmd);
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
@@ -99,22 +87,16 @@ void OnCmd(Shell_t *PShell) {
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
-//    else if(PCmd->NameIs("SetRaw")) {
-//        uint16_t w16 = 0;
-//        if(PCmd->GetNext<uint16_t>(&w16) != retvOk) { PShell->Ack(retvCmdError); return; }
-//        Load::SetRaw(w16);
-//        PShell->Ack(retvOk);
-//    }
-
-//    else if(PCmd->NameIs("Seg")) {
-//        uint8_t v1, v2, v3, v4;
-//        if(PCmd->GetNext<uint8_t>(&v1) != retvOk) { PShell->Ack(retvCmdError); return; }
-//        if(PCmd->GetNext<uint8_t>(&v2) != retvOk) { PShell->Ack(retvCmdError); return; }
-//        if(PCmd->GetNext<uint8_t>(&v3) != retvOk) { PShell->Ack(retvCmdError); return; }
-//        if(PCmd->GetNext<uint8_t>(&v4) != retvOk) { PShell->Ack(retvCmdError); return; }
-//        SegmentShow(v1, v2, v3, v4);
-//        PShell->Ack(retvOk);
-//    }
+    else if(PCmd->NameIs("Seg")) {
+        uint8_t v1, v2, v3, v4, pointmsk = 0;
+        if(PCmd->GetNext<uint8_t>(&v1) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint8_t>(&v2) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint8_t>(&v3) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint8_t>(&v4) != retvOk) { PShell->Ack(retvCmdError); return; }
+        PCmd->GetNext<uint8_t>(&pointmsk);
+        SegmentShow(v1, v2, v3, v4, pointmsk);
+        PShell->Ack(retvOk);
+    }
 
     else {
         Printf("%S\r\n", PCmd->Name);
