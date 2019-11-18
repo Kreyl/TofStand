@@ -8,3 +8,4 @@ Docs/StationDebug_V1.3/
 *.sch-bak
 pcb/pcb.zip
 pcb/Gerber/TofStand_F205.pdf
+pcb/TofStand.step
