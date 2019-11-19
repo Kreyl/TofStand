@@ -25,7 +25,7 @@
 #define L6470_REG_STATUS        0x19
 
 // Values
-#define SPD_MAX                 72000
+#define SPD_MAX                 63000
 #define SPD_MAX_SMALL           (SPD_MAX_SMALL / 1024) // For some reason, there are two definitions of speed
 
 #endif

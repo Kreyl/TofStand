@@ -25,7 +25,9 @@ static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
 
 LedBlinker_t Led{LED_PIN, omPushPull};
 L6470_t Motor{M_SPI};
-#define STEPS_IN_STAND  1000008
+#define STEPS_IN_STAND      1000008
+#define BTN_RUN_SPEED_HIGH  45000
+#define BTN_RUN_SPEED_LOW   9000
 
 #define SETTINGS_FNAME      "Settings.ini"
 struct Settings_t {
@@ -82,9 +84,26 @@ void ITask() {
         EvtMsg_t Msg = EvtQMain.Fetch(TIME_INFINITE);
 //        Printf("Msg.ID %u\r", Msg.ID);
         switch(Msg.ID) {
-            case evtIdButtons:
+            case evtIdButtons: {
                 Printf("Btn %u; %u\r", Msg.BtnEvtInfo.Type, Msg.BtnEvtInfo.BtnID);
-                break;
+                Motor.StopSoftAndHiZ();
+                uint32_t Speed;
+                switch(Msg.BtnEvtInfo.BtnID) {
+                    case 0: // Up
+                        Speed = (GetBtnState(2) == BTN_HOLDDOWN_STATE)? BTN_RUN_SPEED_HIGH : BTN_RUN_SPEED_LOW;
+                        if(Msg.BtnEvtInfo.Type == beShortPress) Motor.Run(dirForward, Speed);
+                        break;
+                    case 1: // Down
+                        Speed = (GetBtnState(2) == BTN_HOLDDOWN_STATE)? BTN_RUN_SPEED_HIGH : BTN_RUN_SPEED_LOW;
+                        if(Msg.BtnEvtInfo.Type == beShortPress) Motor.Run(dirReverse, Speed);
+                        break;
+                    case 2: // Move Fast
+                        Speed = (Msg.BtnEvtInfo.Type == beShortPress)? BTN_RUN_SPEED_HIGH : BTN_RUN_SPEED_LOW;
+                        if(GetBtnState(0) == BTN_HOLDDOWN_STATE) Motor.Run(dirForward, Speed);
+                        else if(GetBtnState(1) == BTN_HOLDDOWN_STATE) Motor.Run(dirReverse, Speed);
+                        break;
+                } // switch
+            } break;
 
             case evtIdShellCmd:
                 Led.StartOrContinue(lsqCmd);
