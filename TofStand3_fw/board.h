@@ -40,6 +40,10 @@
 #define UART_TX_PIN     6
 #define UART_RX_PIN     7
 
+#define UART_RPI_GPIO   GPIOC
+#define UART_RPI_TX     10
+#define UART_RPI_RX     11
+
 // LED
 #define LED_PIN         GPIOB, 8
 
@@ -48,11 +52,18 @@
 #define BTN_DOWN_PIN    GPIOB, 1, pudPullDown
 #define BTN_FAST_PIN    GPIOB, 2, pudPullDown
 
+#define CHAMBER_CLOSED_PIN  GPIOB, 10, pudPullUp
+
 // 7 segment
 #define SEG_MOSI        GPIOB, 15, omPushPull, pudNone, AF5
 #define SEG_CLK         GPIOB, 13, omPushPull, pudNone, AF5
 #define SEG_DRV_LE      GPIOB, 12
 #define SEG_DRV_OE      GPIOB, 14
+
+// Endstops
+#define ENDSTOP_TOP     GPIOA, 0
+#define ENDSTOP_BOTTOM  GPIOA, 1
+#define ENDSTOP_TOUCH   GPIOA, 2
 
 #if 1 // ==== L6470 ====
 #define M_SPI           SPI1
@@ -69,6 +80,13 @@
 #define M_FLAG1         5
 #define M_STBY_RST      2
 #endif
+
+// USB
+#define USB_DETECT_PIN  GPIOA, 9
+#define USB_DM          GPIOA, 11
+#define USB_DP          GPIOA, 12
+#define USB_AF          AF10
+#define BOARD_OTG_NOVBUSSENS    TRUE
 
 #endif // GPIO
 
@@ -109,6 +127,12 @@
 #define UART_DMA_TX_MODE(Chnl) (STM32_DMA_CR_CHSEL(Chnl) | DMA_PRIORITY_LOW | STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE | STM32_DMA_CR_MINC | STM32_DMA_CR_DIR_M2P | STM32_DMA_CR_TCIE)
 #define UART_DMA_RX_MODE(Chnl) (STM32_DMA_CR_CHSEL(Chnl) | DMA_PRIORITY_MEDIUM | STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE | STM32_DMA_CR_MINC | STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_CIRC)
 
+#define UART_RPI_DMA_TX     STM32_DMA_STREAM_ID(1, 4)
+#define UART_RPI_DMA_RX     STM32_DMA_STREAM_ID(1, 2)
+#define UART_RPI_DMA_CHNL   4
+#define UART_DMA_RPI_TX_MODE(Chnl) (STM32_DMA_CR_CHSEL(Chnl) | DMA_PRIORITY_LOW | STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE | STM32_DMA_CR_MINC | STM32_DMA_CR_DIR_M2P | STM32_DMA_CR_TCIE)
+#define UART_RPI_DMA_RX_MODE(Chnl) (STM32_DMA_CR_CHSEL(Chnl) | DMA_PRIORITY_MEDIUM | STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE | STM32_DMA_CR_MINC | STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_CIRC)
+
 // ==== SPI ====
 #define SEGS_SPI_DMA_TX STM32_DMA_STREAM_ID(1, 4)
 #define SEGS_DMA_TX_CHNL   0
@@ -146,13 +170,18 @@
 
 #if 1 // ========================== USART ======================================
 #define PRINTF_FLOAT_EN FALSE
-#define UART_TXBUF_SZ   8192
+#define UART_TXBUF_SZ   4096
 #define UART_RXBUF_SZ   99
 
-#define UARTS_CNT       1
+#define UARTS_CNT       2
 
 #define CMD_UART_PARAMS \
     USART1, UART_GPIO, UART_TX_PIN, UART_GPIO, UART_RX_PIN, \
     UART_DMA_TX, UART_DMA_RX, UART_DMA_TX_MODE(UART_DMA_CHNL), UART_DMA_RX_MODE(UART_DMA_CHNL)
+
+#define RPI_UART_PARAMS \
+    UART4, UART_RPI_GPIO, UART_RPI_TX, UART_RPI_GPIO, UART_RPI_RX, \
+    UART_RPI_DMA_TX, UART_RPI_DMA_RX, \
+    UART_DMA_RPI_TX_MODE(UART_RPI_DMA_CHNL), UART_RPI_DMA_RX_MODE(UART_RPI_DMA_CHNL)
 
 #endif

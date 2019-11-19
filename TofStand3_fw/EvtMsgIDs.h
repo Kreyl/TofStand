@@ -15,5 +15,6 @@ enum EvtMsgId_t {
     evtIdEverySecond,
 
     evtIdButtons,
-
+    evtIdChamberOpen,
+    evtIdChamberClose,
 };

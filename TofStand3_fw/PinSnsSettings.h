@@ -23,12 +23,15 @@
 
 // Handlers
 extern void ProcessButtons(PinSnsState_t *PState, uint32_t Len);
+extern void ProcessChamberClosed(PinSnsState_t *PState, uint32_t Len);
 
 const PinSns_t PinSns[] = {
         // Buttons
         {BTN_UP_PIN, ProcessButtons},
         {BTN_DOWN_PIN, ProcessButtons},
         {BTN_FAST_PIN, ProcessButtons},
+        // Chamber closed
+        {CHAMBER_CLOSED_PIN, ProcessChamberClosed},
 };
 #define PIN_SNS_CNT     countof(PinSns)
 

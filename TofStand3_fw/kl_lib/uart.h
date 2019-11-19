@@ -108,16 +108,16 @@ private:
     void IOnTxEnd() {} // Dummy
     uint8_t IPutChar(char c) { return IPutByte(c);  }
     void IStartTransmissionIfNotYet() { BaseUart_t::IStartTransmissionIfNotYet(); }
+public:
+    CmdUart_t(const UartParams_t *APParams) : BaseUart_t(APParams) {}
+    void ProcessByteIfReceived();
+    void SignalCmdProcessed() { BaseUart_t::SignalRxProcessed(); }
     void Print(const char *format, ...) {
         va_list args;
         va_start(args, format);
         IVsPrintf(format, args);
         va_end(args);
     }
-public:
-    CmdUart_t(const UartParams_t *APParams) : BaseUart_t(APParams) {}
-    void ProcessByteIfReceived();
-    void SignalCmdProcessed() { BaseUart_t::SignalRxProcessed(); }
 };
 
 class CmdUart485_t : public CmdUart_t {

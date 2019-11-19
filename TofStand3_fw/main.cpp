@@ -14,7 +14,10 @@
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
 static const UartParams_t CmdUartParams(115200, CMD_UART_PARAMS);
+static const UartParams_t RpiUartParams(115200, RPI_UART_PARAMS);
 CmdUart_t Uart{&CmdUartParams};
+CmdUart_t RpiUart{&RpiUartParams};
+
 static void ITask();
 static void OnCmd(Shell_t *PShell);
 
@@ -48,6 +51,7 @@ int main() {
     Uart.Init();
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
+    RpiUart.Init();
 
     // LEDs
     Led.Init();
@@ -95,6 +99,11 @@ void ITask() {
             default: break;
         } // switch
     } // while true
+}
+
+void ProcessChamberClosed(PinSnsState_t *PState, uint32_t Len) {
+    if(*PState == pssRising) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdChamberClose));
+    else if(*PState == pssFalling) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdChamberOpen));
 }
 
 #if 1 // ======================= Command processing ============================
