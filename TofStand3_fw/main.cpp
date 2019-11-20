@@ -9,6 +9,9 @@
 #include "PinSnsSettings.h"
 #include "7segment.h"
 #include "L6470.h"
+#include "usb_msdcdc.h"
+#include "ff.h"
+#include "kl_fs_utils.h"
 
 #if 1 // =============== Defines ================
 // Forever
@@ -29,6 +32,8 @@ L6470_t Motor{M_SPI};
 #define BTN_RUN_SPEED_HIGH  45000
 #define BTN_RUN_SPEED_LOW   9000
 
+// Filesystem etc.
+FATFS FlashFS;
 #define SETTINGS_FNAME      "Settings.ini"
 struct Settings_t {
     uint32_t Acceleration = 1200, Deceleration = 12000;
@@ -60,7 +65,14 @@ int main() {
     Led.StartOrRestart(lsqCmd);
     SegmentInit();
 
-    SimpleSensors::Init(); // Buttons
+    SimpleSensors::Init();
+
+    UsbMsdCdc.Init();
+    // Init filesystem
+    FRESULT err;
+    err = f_mount(&FlashFS, "", 0);
+    if(err == FR_OK) Settings.Load();
+    else Printf("FS error\r");
 
     // Motor
     Motor.Init();
@@ -115,6 +127,20 @@ void ITask() {
 //                Printf("Second\r");
                 break;
 
+#if 1 // ======= USB =======
+            case evtIdUsbConnect:
+//                Printf("USB connect\r");
+                UsbCDC.Connect();
+                break;
+            case evtIdUsbDisconnect:
+                UsbCDC.Disconnect();
+//                Printf("USB disconnect\r");
+                break;
+            case evtIdUsbReady:
+//                Printf("USB ready\r");
+                break;
+#endif
+
             default: break;
         } // switch
     } // while true
@@ -123,6 +149,10 @@ void ITask() {
 void ProcessChamberClosed(PinSnsState_t *PState, uint32_t Len) {
     if(*PState == pssRising) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdChamberClose));
     else if(*PState == pssFalling) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdChamberOpen));
+}
+
+void ProcessUsbConnect(PinSnsState_t *PState, uint32_t Len) {
+
 }
 
 #if 1 // ======================= Command processing ============================

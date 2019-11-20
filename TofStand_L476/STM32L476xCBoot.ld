@@ -14,17 +14,18 @@
     limitations under the License.
 */
 
+/* Here is offset in flash */
+
  /* KL: Put it here instead of Makefile */
 __main_stack_size__     = 0x0400; 
 __process_stack_size__  = 0x0400;
 
 /*
- * STM32F205xE memory setup.
- * Note: Use of ram1 and ram2 is mutually exclusive with use of ram0.
+ * STM32L476xC memory setup.
  */
 MEMORY
 {
-    flash0  : org = 0x08000000, len = 1M
+    flash0  : org = 0x08008000, len = 224k
     flash1  : org = 0x00000000, len = 0
     flash2  : org = 0x00000000, len = 0
     flash3  : org = 0x00000000, len = 0
@@ -32,14 +33,15 @@ MEMORY
     flash5  : org = 0x00000000, len = 0
     flash6  : org = 0x00000000, len = 0
     flash7  : org = 0x00000000, len = 0
-    ram0    : org = 0x20000000, len = 128k    /* SRAM1 + SRAM2 */
-    ram1    : org = 0x20000000, len = 112k    /* SRAM1 */
-    ram2    : org = 0x2001C000, len = 16k     /* SRAM2 */
+    ram0    : org = 0x20000000, len = 96k
+    ram1    : org = 0x00000000, len = 0
+    ram2    : org = 0x00000000, len = 0
     ram3    : org = 0x00000000, len = 0
-    ram4    : org = 0x10000000, len = 64k     /* CCM SRAM */
-    ram5    : org = 0x40024000, len = 4k      /* BCKP SRAM */
+    ram4    : org = 0x10000000, len = 32k
+    ram5    : org = 0x00000000, len = 0
     ram6    : org = 0x00000000, len = 0
-    ram7    : org = 0x00000000, len = 0}
+    ram7    : org = 0x00000000, len = 0
+}
 
 /* For each data/text section two region are defined, a virtual region
    and a load region (_LMA suffix).*/

@@ -530,7 +530,8 @@ static uint8_t GetStatus(void) {
     else if(FLASH->SR & FLASH_SR_WRPERR) return retvWriteProtect;
     else if(FLASH->SR & (uint32_t)0x1E00) return retvFail;
 #elif defined STM32F2XX
-
+    else if(FLASH->SR & FLASH_SR_WRPERR) return retvWriteProtect;
+    else if(FLASH->SR & (uint32_t)0xF0) return retvFail;
 #else
     else if(FLASH->SR & FLASH_SR_PGERR) return retvFail;
     else if(FLASH->SR & FLASH_SR_WRPRTERR) return retvFail;
@@ -579,8 +580,6 @@ void UnlockFlash() {
 void LockFlash() {
 #if defined STM32L1XX
     FLASH->PECR |= FLASH_PECR_PRGLOCK;
-#elif defined STM32F2XX
-
 #else
     WaitForLastOperation(FLASH_ProgramTimeout);
     FLASH->CR |= FLASH_CR_LOCK;

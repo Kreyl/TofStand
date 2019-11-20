@@ -52,7 +52,9 @@
 #define BTN_DOWN_PIN    GPIOB, 1, pudPullDown
 #define BTN_FAST_PIN    GPIOB, 2, pudPullDown
 
+// Sensors
 #define CHAMBER_CLOSED_PIN  GPIOB, 10, pudPullUp
+#define USB_DETECT_PIN  GPIOA, 9, pudPullDown
 
 // 7 segment
 #define SEG_MOSI        GPIOB, 15, omPushPull, pudNone, AF5
@@ -82,17 +84,12 @@
 #endif
 
 // USB
-#define USB_DETECT_PIN  GPIOA, 9
 #define USB_DM          GPIOA, 11
 #define USB_DP          GPIOA, 12
 #define USB_AF          AF10
 #define BOARD_OTG_NOVBUSSENS    TRUE
 
 #endif // GPIO
-
-#if 1 // =========================== SPI =======================================
-#define SEGS_SPI        SPI2
-#endif
 
 #if I2C2_ENABLED // ====================== I2C ================================
 #define I2C2_BAUDRATE   400000
