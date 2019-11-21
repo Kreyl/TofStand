@@ -83,7 +83,7 @@ uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
     chSysUnlock();
     return Rslt;
 #elif defined STM32L4XX
-    Printf("WR %u %X; %u\r", BlockAddress, Addr, BlocksCnt); chThdSleepMilliseconds(45);
+//    Printf("WR %u %X; %u\r", BlockAddress, Addr, BlocksCnt); chThdSleepMilliseconds(45);
     //    Printf("WR 0x%X\r%A\r\r", Addr, Ptr, (BlocksCnt * MSD_BLOCK_SZ), ' ');
     // Unlock flash
     chSysLock();
@@ -94,7 +94,7 @@ uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
     // Erase flash
     for(uint32_t i=0; i<BlocksCnt; i++) {
         uint32_t PageAddr = i + (Addr - FLASH_START_ADDR) / FLASH_PAGE_SIZE;
-        Printf("Page %u\r", PageAddr);
+//        Printf("Page %u\r", PageAddr);
         if(Flash::ErasePage(PageAddr) != retvOk) {
             Printf("\rPage %u Erase fail\r", PageAddr);
             chThdSleepMilliseconds(45);

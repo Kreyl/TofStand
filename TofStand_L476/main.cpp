@@ -22,13 +22,20 @@ CmdUart_t RpiUart{&RpiUartParams};
 static void ITask();
 static void OnCmd(Shell_t *PShell);
 
-static TmrKL_t TmrOneSecond {TIME_MS2I(999), evtIdEverySecond, tktPeriodic};
-
 LedBlinker_t Led{LED_PIN, omPushPull};
 L6470_t Motor{M_SPI};
 #define STEPS_IN_STAND      1000008
 #define BTN_RUN_SPEED_HIGH  45000
 #define BTN_RUN_SPEED_LOW   9000
+
+void TopEndstopHandler();
+void BottomEndstopHandler();
+void TouchEndstopHandler();
+void BusyPinHandler();
+PinIrq_t EndstopTop{ENDSTOP_TOP, pudPullDown, TopEndstopHandler};
+PinIrq_t EndstopBottom{ENDSTOP_BOTTOM, pudPullDown, BottomEndstopHandler};
+PinIrq_t EndstopTouch{ENDSTOP_TOUCH, pudPullDown, TouchEndstopHandler};
+PinIrq_t BusyPin{M_AUX_GPIO, M_BUSY_SYNC1, pudPullUp, BusyPinHandler};
 
 bool UsbIsConnected = false;
 
@@ -98,7 +105,16 @@ int main(void) {
     Motor.SetCurrent4Hold(Settings.Current4Hold);
     Motor.StopSoftAndHold();
 
-//    TmrOneSecond.StartOrRestart();
+    // Endstops
+    EndstopTop.Init(ttRising);
+    EndstopBottom.Init(ttRising);
+    EndstopTouch.Init(ttRising);
+    EndstopTop.EnableIrq(IRQ_PRIO_MEDIUM);
+    EndstopBottom.EnableIrq(IRQ_PRIO_MEDIUM);
+    EndstopTouch.EnableIrq(IRQ_PRIO_MEDIUM);
+    // Busy
+//    Busy.Init(ttRising);
+//    Busy.EnableIrq(IRQ_PRIO_MEDIUM);
 
     // ==== Main cycle ====
     ITask();
@@ -191,6 +207,23 @@ void Settings_t::Load() {
     if(Settings.StartSpeed > 90000) Settings.Current4Hold = 90000;
 }
 
+// ======= Endstops =======
+void TopEndstopHandler() {
+    PrintfI("%S\r", __FUNCTION__);
+}
+
+void BottomEndstopHandler() {
+    PrintfI("%S\r", __FUNCTION__);
+}
+
+void TouchEndstopHandler() {
+    PrintfI("%S\r", __FUNCTION__);
+}
+
+void BusyPinHandler() {
+    PrintfI("%S\r", __FUNCTION__);
+}
+
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
     Cmd_t *PCmd = &PShell->Cmd;
@@ -213,10 +246,6 @@ void OnCmd(Shell_t *PShell) {
 
     else if(PCmd->NameIs("Rst")) {
         REBOOT();
-    }
-
-    else if(PCmd->NameIs("del")) {
-        PShell->Ack(f_unlink("Settings.ini"));
     }
 
 #if 1 // ==== Motor control ====
