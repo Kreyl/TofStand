@@ -498,8 +498,6 @@ void ClearPendingFlags() {
     FLASH->SR = FLASH_SR_EOP | FLASH_SR_PGAERR | FLASH_SR_WRPERR;
 #elif defined STM32L4XX
     FLASH->SR = FLASH_SR_EOP | FLASH_SR_PROGERR | FLASH_SR_WRPERR;
-#elif defined STM32F2XX
-
 #elif defined STM32F7XX
 
 #else
@@ -591,8 +589,6 @@ void UnlockFlash() {
 void LockFlash() {
 #if defined STM32L1XX
     FLASH->PECR |= FLASH_PECR_PRGLOCK;
-#elif defined STM32F2XX
-
 #else
     WaitForLastOperation(FLASH_ProgramTimeout);
     FLASH->CR |= FLASH_CR_LOCK;
@@ -627,8 +623,6 @@ uint8_t ErasePage(uint32_t PageAddress) {
         status = WaitForLastOperation(FLASH_EraseTimeout);
         FLASH->CR &= ~FLASH_CR_PER; // Disable the PageErase Bit
         chSysUnlock();
-#elif defined STM32F2XX
-
 #elif defined STM32F7XX
 
 #else
@@ -645,18 +639,24 @@ uint8_t ErasePage(uint32_t PageAddress) {
 }
 
 #if defined STM32L4XX
-uint8_t ProgramDWord(uint32_t Address, uint64_t Data) {
+uint8_t ProgramBuf32(uint32_t Address, uint32_t *PData, int32_t ASzBytes) {
+    Printf("PrgBuf %X  %u\r", Address, ASzBytes); chThdSleepMilliseconds(45);
     uint8_t status = WaitForLastOperation(FLASH_ProgramTimeout);
     if(status == retvOk) {
         chSysLock();
         ClearErrFlags();
-        // Deactivate the data cache to avoid data misbehavior
-        FLASH->ACR &= ~FLASH_ACR_DCEN;
-        // Program Dword
-        SET_BIT(FLASH->CR, FLASH_CR_PG);    // Enable flash writing
-        *(volatile uint32_t*)Address = (uint32_t)Data;
-        *(volatile uint32_t*)(Address + 4) = (uint32_t)(Data >> 32);
-        status = WaitForLastOperation(FLASH_ProgramTimeout);
+        FLASH->ACR &= ~FLASH_ACR_DCEN;      // Deactivate the data cache to avoid data misbehavior
+        FLASH->CR |= FLASH_CR_PG;           // Enable flash writing
+        // Write data
+        while(ASzBytes >= 7 and status == retvOk) {
+            // Write Word64
+            *(volatile uint32_t*)Address = *PData++;
+            Address += 4;
+            *(volatile uint32_t*)Address = *PData++;
+            Address += 4;
+            ASzBytes -= 8;
+            status = WaitForLastOperation(FLASH_ProgramTimeout);
+        }
         FLASH->CR &= ~FLASH_CR_PG;          // Disable flash writing
         // Flush the caches to be sure of the data consistency
         FLASH->ACR |= FLASH_ACR_ICRST;      // }
@@ -877,7 +877,7 @@ void IwdgFrozeInStandby() {
 #endif
 
 // ==== Dualbank ====
-#if defined STM32L476
+#if defined STM32L4XX
 bool DualbankIsEnabled() {
     return (FLASH->OPTR & FLASH_OPTR_DUALBANK);
 }

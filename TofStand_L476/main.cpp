@@ -3,12 +3,13 @@
 #include "Sequences.h"
 #include "shell.h"
 #include "led.h"
-//#include "kl_fs_utils.h"
 #include "SimpleSensors.h"
 #include "buttons.h"
 #include "L6470.h"
 #include "7segment.h"
 #include "usb_msdcdc.h"
+#include "ff.h"
+#include "kl_fs_utils.h"
 
 #if 1 // =============== Defines ================
 // Forever
@@ -29,8 +30,10 @@ L6470_t Motor{M_SPI};
 #define BTN_RUN_SPEED_HIGH  45000
 #define BTN_RUN_SPEED_LOW   9000
 
+bool UsbIsConnected = false;
+
 // Filesystem etc.
-//FATFS FlashFS;
+FATFS FlashFS;
 #define SETTINGS_FNAME      "Settings.ini"
 struct Settings_t {
     uint32_t Acceleration = 1200, Deceleration = 12000;
@@ -60,6 +63,14 @@ int main(void) {
     Uart.Init();
     Printf("\r%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
+
+    // Disable dualbank if enabled
+    if(Flash::DualbankIsEnabled()) {
+        Printf("Dualbank enabled, disabling\r");
+        chThdSleepMilliseconds(45);
+        Flash::DisableDualbank();   // Will reset inside
+    }
+
     RpiUart.Init();
 
     // LEDs
@@ -69,12 +80,13 @@ int main(void) {
 
     SimpleSensors::Init();
 
-    UsbMsdCdc.Init();
     // Init filesystem
-//    FRESULT err;
-//    err = f_mount(&FlashFS, "", 0);
-//    if(err == FR_OK) Settings.Load();
-//    else Printf("FS error\r");
+    FRESULT err;
+    err = f_mount(&FlashFS, "", 0);
+    if(err == FR_OK) Settings.Load();
+    else Printf("FS error\r");
+
+    UsbMsdCdc.Init();
 
     // Motor
     Motor.Init();
@@ -124,16 +136,14 @@ void ITask() {
                 } // switch
             } break;
 
-#if 0       // ======= USB =======
+#if 1       // ======= USB =======
             case evtIdUsbConnect:
                 Printf("USB connect\r");
-                State.UsbConnected = true;
-                StateMachine(eventUsbConnect);
+                UsbMsdCdc.Connect();
                 break;
             case evtIdUsbDisconnect:
+                UsbMsdCdc.Disconnect();
                 Printf("USB disconnect\r");
-                State.UsbConnected = false;
-                StateMachine(eventDisconnect);
                 break;
             case evtIdUsbReady:
                 Printf("USB ready\r");
@@ -150,7 +160,35 @@ void ProcessChamberClosed(PinSnsState_t *PState, uint32_t Len) {
 }
 
 void ProcessUsbConnect(PinSnsState_t *PState, uint32_t Len) {
+    if((*PState == pssRising or *PState == pssHi) and !UsbIsConnected) {
+        UsbIsConnected = true;
+        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbConnect));
+    }
+    else if((*PState == pssFalling or *PState == pssLo) and UsbIsConnected) {
+        UsbIsConnected = false;
+        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbDisconnect));
+    }
+}
 
+void Settings_t::Load() {
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Acceleration", &Settings.Acceleration);
+    if(Settings.Acceleration > 0xFFFF) Settings.Acceleration = 1200;
+
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Deceleration", &Settings.Deceleration);
+    if(Settings.Acceleration > 0xFFFF) Settings.Acceleration = 12000;
+
+    uint32_t tmp = 7;
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StepMode", &tmp);
+    if(tmp > 7) tmp = 7;
+    Settings.StepMode = (StepMode_t)tmp;
+
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Run", &Settings.Current4Run);
+    if(Settings.Current4Run > 0xFF) Settings.Current4Run = 18;
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Hold", &Settings.Current4Hold);
+    if(Settings.Current4Hold > 0xFF) Settings.Current4Hold = 18;
+
+    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StartSpeed", &Settings.StartSpeed);
+    if(Settings.StartSpeed > 90000) Settings.Current4Hold = 90000;
 }
 
 #if 1 // ======================= Command processing ============================
@@ -175,6 +213,10 @@ void OnCmd(Shell_t *PShell) {
 
     else if(PCmd->NameIs("Rst")) {
         REBOOT();
+    }
+
+    else if(PCmd->NameIs("del")) {
+        PShell->Ack(f_unlink("Settings.ini"));
     }
 
 #if 1 // ==== Motor control ====

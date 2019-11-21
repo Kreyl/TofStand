@@ -144,7 +144,7 @@
 //#include "hal_pwm.h"
 //#include "hal_rtc.h"
 //#include "hal_serial.h"
-#include "hal_sdc.h"
+//#include "hal_sdc.h"
 //#include "hal_sio.h"
 //#include "hal_spi.h"
 //#include "hal_trng.h"
@@ -163,7 +163,7 @@
 
 /* Complex drivers.*/
 //#include "hal_mmc_spi.h"
-//#include "hal_serial_usb.h"
+#include "hal_serial_usb.h"
 
 /* Community drivers.*/
 #if defined(HAL_USE_COMMUNITY) || defined(__DOXYGEN__)

@@ -45,5 +45,11 @@ extern SDCDriver SDCD1;
 #define MSD_BLOCK_SZ            FLASH_PAGE_SIZE
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 uint8_t MSDRead(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt);
 uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt);
+#ifdef __cplusplus
+}
+#endif

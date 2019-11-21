@@ -9,6 +9,7 @@
 #include "uart.h"
 #include "kl_lib.h"
 
+extern "C"
 uint8_t MSDRead(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
 //    Printf("RD %u; %u\r", BlockAddress, BlocksCnt);
 #if MSD_USE_SD
@@ -21,13 +22,13 @@ uint8_t MSDRead(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
     memcpy(Ptr, (const void*)Addr, BlocksCnt * MSD_BLOCK_SZ);
 //    Printf("RD %u %X; %u\r", BlockAddress, Addr, BlocksCnt);
 //    Printf("RD %X\r%A\r\r", Addr, (uint8_t*)Addr, (BlocksCnt * MSD_BLOCK_SZ), ' ');
-//    chThdSleepMilliseconds(99);
     return retvOk;
 #else
     return retvOk;
 #endif
 }
 
+extern "C"
 uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
 //    Printf("WR %u; %u\r", BlockAddress, BlocksCnt);
 #if MSD_USE_SD
@@ -46,7 +47,6 @@ uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
 #elif MSD_USE_INNER_FLASH
     uint8_t Rslt = retvOk;
     uint32_t Addr = MSD_STORAGE_ADDR + (BlockAddress * MSD_BLOCK_SZ);
-    uint32_t DWordCnt = (BlocksCnt * MSD_BLOCK_SZ) / sizeof(uint32_t);
 #if defined STM32F1XX
 //    Printf("WR %u %X; %u; %u\r", BlockAddress, Addr, BlocksCnt, DWordCnt);
 //    Printf("WR 0x%X\r%A\r\r", Addr, Ptr, (BlocksCnt * MSD_BLOCK_SZ), ' ');
@@ -82,47 +82,37 @@ uint8_t MSDWrite(uint32_t BlockAddress, uint32_t *Ptr, uint32_t BlocksCnt) {
     Flash::LockFlash();
     chSysUnlock();
     return Rslt;
-#elif defined STM32F2XX
-    //    Printf("WR %u %X; %u; %u\r", BlockAddress, Addr, BlocksCnt, DWordCnt);
+#elif defined STM32L4XX
+    Printf("WR %u %X; %u\r", BlockAddress, Addr, BlocksCnt); chThdSleepMilliseconds(45);
     //    Printf("WR 0x%X\r%A\r\r", Addr, Ptr, (BlocksCnt * MSD_BLOCK_SZ), ' ');
-        // Unlock flash
-        chSysLock();
-        Flash::LockFlash();
-        Flash::UnlockFlash();
-        chSysUnlock();
-        // Set program parallelism to 32 bits
-        uint32_t tmp = FLASH->CR;
-        tmp &= ~(0b11UL << 8);
-        tmp |= 0b10UL << 8;
-        FLASH->CR = tmp;
-        Flash::ClearPendingFlags();
-        // Erase flash
-        for(uint32_t i=0; i<BlocksCnt; i++) {
-            if(Flash::ErasePage(Addr + (FLASH_PAGE_SIZE * i)) != retvOk) {
-                Printf("\rPage %X Erase fail\r", Addr + (FLASH_PAGE_SIZE * i));
-                chThdSleepMilliseconds(45);
-                Rslt = retvFail;
-                goto End;
-            }
+    // Unlock flash
+    chSysLock();
+    Flash::LockFlash();
+    Flash::UnlockFlash();
+    chSysUnlock();
+    Flash::ClearPendingFlags();
+    // Erase flash
+    for(uint32_t i=0; i<BlocksCnt; i++) {
+        uint32_t PageAddr = i + (Addr - FLASH_START_ADDR) / FLASH_PAGE_SIZE;
+        Printf("Page %u\r", PageAddr);
+        if(Flash::ErasePage(PageAddr) != retvOk) {
+            Printf("\rPage %u Erase fail\r", PageAddr);
+            chThdSleepMilliseconds(45);
+            Rslt = retvFail;
+            goto End;
         }
-        // Write flash
-        for(uint32_t i=0; i<DWordCnt; i++) {
-            if(Flash::ProgramWord(Addr, Ptr[i]) != retvOk) {
-                Printf("Write Fail\r");
-                chThdSleepMilliseconds(45);
-                Rslt = retvFail;
-                goto End;
-            }
-            Addr += sizeof(uint32_t);
-        }
-        Flash::WaitForLastOperation(TIME_MS2I(450));
-
-        End:
-        chSysLock();
-        Flash::LockFlash();
-        chSysUnlock();
-        return Rslt;
-
+    }
+    // Write flash
+    Rslt = Flash::ProgramBuf32(Addr, Ptr, BlocksCnt * FLASH_PAGE_SIZE);
+    if(Rslt != retvOk) {
+        Printf("Write Fail\r");
+        chThdSleepMilliseconds(45);
+    }
+    End:
+    chSysLock();
+    Flash::LockFlash();
+    chSysUnlock();
+    return Rslt;
 #endif
 
 #else
