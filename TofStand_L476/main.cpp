@@ -38,17 +38,147 @@ PinIrq_t EndstopTouch{ENDSTOP_TOUCH, pudPullDown, TouchEndstopHandler};
 PinIrq_t BusyPin{M_AUX_GPIO, M_BUSY_SYNC1, pudPullUp, BusyPinHandler};
 
 bool UsbIsConnected = false;
-
-// Filesystem etc.
 FATFS FlashFS;
+#endif
+
+#if 1 // =============== Statemachine ==============
 #define SETTINGS_FNAME      "Settings.ini"
-struct Settings_t {
+
+struct HTS_t {
+    uint32_t Height_mm, DelayBefore_ms, Speed;
+
+};
+
+static HTS_t Steps[] = {
+        {3,   100, 9000},
+        {100, 100, 18000},
+        {600, 100, 18000},
+};
+
+enum State_t {
+    lgsAfterPwrOn, lgsIdleTop,
+    lgsMovingDownFast, lgsMovingDownSlow,
+    lgsStepStop, lgsStepMovingUp,
+};
+
+class Logic_t {
+private:
+    bool MustStart = false;
+    int32_t Y = 0;
+    int32_t StepN = 0;
+    void IPrint(const char *format, ...) {
+        va_list args;
+        va_start(args, format);
+        Uart.IVsPrintf(format, args);
+        if(UsbMsdCdc.IsActive()) UsbMsdCdc.IVsPrintf(format, args);
+        va_end(args);
+    }
+    TmrKL_t ITmr {TIME_MS2I(999), evtIdDelayEnd, tktOneShot};
+    void IWait(uint32_t Delay_ms) { ITmr.StartOrRestart(TIME_MS2I(Delay_ms)); }
+    uint32_t mm2step(uint32_t mm) { return mm*2; } // XXX
+public:
+    State_t State = lgsAfterPwrOn;
     uint32_t Acceleration = 1200, Deceleration = 12000;
-    StepMode_t StepMode = smFull; //sm128;
-    uint32_t Current4Run = 18, Current4Hold = 18;
-    uint32_t StartSpeed = 27000;
-    void Load();
-} Settings;
+    StepMode_t StepMode = smFull;//sm128;
+    uint32_t Current4Run = 45, Current4Hold = 18;
+    uint32_t SpeedUpFast = 27000;
+    uint32_t SpeedDownFast = 27000;
+    uint32_t SpeedDownSlow = 2700;
+    uint32_t SpeedUp0 = 18000;
+
+    void GoTop() {
+        if(EndstopTop.IsHi()) State = lgsIdleTop;
+        else Motor.Run(dirForward, SpeedUpFast);
+    }
+
+    void LoadSettings() {
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Acceleration", &Acceleration);
+        if(Acceleration > 0xFFFF) Acceleration = 1200;
+
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Deceleration", &Deceleration);
+        if(Acceleration > 0xFFFF) Acceleration = 12000;
+
+        uint32_t tmp = 7;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StepMode", &tmp);
+        if(tmp > 7) tmp = 7;
+        StepMode = (StepMode_t)tmp;
+
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Run", &Current4Run);
+        if(Current4Run > 0xFF) Current4Run = 18;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Hold", &Current4Hold);
+        if(Current4Hold > 0xFF) Current4Hold = 18;
+
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedUpFast", &SpeedUpFast);
+        if(SpeedUpFast > 90000) SpeedUpFast = 90000;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedDownFast", &SpeedDownFast);
+        if(SpeedDownFast > 90000) SpeedDownFast = 90000;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedUpFast", &SpeedDownSlow);
+        if(SpeedDownSlow > 90000) SpeedDownSlow = 90000;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedUpFast", &SpeedUp0);
+        if(SpeedUp0 > 90000) SpeedUp0 = 90000;
+    }
+
+    void Start() {
+        Motor.StopSoftAndHiZ();
+        if(State == lgsIdleTop) {
+            State = lgsMovingDownFast;
+            Motor.Run(dirReverse, SpeedDownFast);
+        }
+        else {
+            MustStart = true;
+            GoTop();
+        }
+    }
+
+    // Events
+    void OnTopEndstop() {
+        State = lgsIdleTop;
+        if(MustStart) {
+            MustStart = false;
+            Start();
+        }
+    }
+
+    void OnBottomEndstop() {
+        if(State == lgsMovingDownFast) {
+            State = lgsMovingDownSlow;
+            Motor.Run(dirReverse, SpeedDownSlow);
+        }
+    }
+
+    void OnTouchEndstop() {
+        State = lgsStepStop;
+        IPrint("Height 0\r\n");
+        Y = 0; // Reset current height
+        // Start testing
+        StepN = 0;
+        IWait(Steps[StepN].DelayBefore_ms);
+    }
+
+    void OnDelayEnd() {
+        switch(State) {
+            case lgsStepStop:
+                State = lgsStepMovingUp;
+                Motor.Move(dirForward, Steps[StepN].Speed, mm2step(Steps[StepN].Height_mm));
+                break;
+
+            default: break;
+        }
+    }
+
+    void OnBusyFlag() {
+        switch(State) {
+            case lgsStepMovingUp:
+                StepN--;
+                if(StepN <= 0) {
+
+                }
+                break;
+
+            default: break;
+        }
+    }
+} Logic;
 #endif
 
 int main(void) {
@@ -90,19 +220,19 @@ int main(void) {
     // Init filesystem
     FRESULT err;
     err = f_mount(&FlashFS, "", 0);
-    if(err == FR_OK) Settings.Load();
+    if(err == FR_OK) Logic.LoadSettings();
     else Printf("FS error\r");
 
     UsbMsdCdc.Init();
 
     // Motor
     Motor.Init();
-    Motor.SetAcceleration(Settings.Acceleration);
-    Motor.SetDeceleration(Settings.Deceleration);
-    Motor.SetStepMode(Settings.StepMode);
+    Motor.SetAcceleration(Logic.Acceleration);
+    Motor.SetDeceleration(Logic.Deceleration);
+    Motor.SetStepMode(Logic.StepMode);
     // Current
-    Motor.SetCurrent4Run(Settings.Current4Run);
-    Motor.SetCurrent4Hold(Settings.Current4Hold);
+    Motor.SetCurrent4Run(Logic.Current4Run);
+    Motor.SetCurrent4Hold(Logic.Current4Hold);
     Motor.StopSoftAndHold();
 
     // Endstops
@@ -113,8 +243,11 @@ int main(void) {
     EndstopBottom.EnableIrq(IRQ_PRIO_MEDIUM);
     EndstopTouch.EnableIrq(IRQ_PRIO_MEDIUM);
     // Busy
-//    Busy.Init(ttRising);
-//    Busy.EnableIrq(IRQ_PRIO_MEDIUM);
+    BusyPin.Init(ttFalling);
+    BusyPin.EnableIrq(IRQ_PRIO_MEDIUM);
+
+    chThdSleepMilliseconds(720); // Let power to stabilize
+    Logic.GoTop();
 
     // ==== Main cycle ====
     ITask();
@@ -132,7 +265,7 @@ void ITask() {
                 break;
 
             case evtIdButtons: {
-                Printf("Btn %u; %u\r", Msg.BtnEvtInfo.Type, Msg.BtnEvtInfo.BtnID);
+//                Printf("Btn %u; %u\r", Msg.BtnEvtInfo.Type, Msg.BtnEvtInfo.BtnID);
                 Motor.StopSoftAndHiZ();
                 uint32_t Speed;
                 switch(Msg.BtnEvtInfo.BtnID) {
@@ -152,6 +285,14 @@ void ITask() {
                 } // switch
             } break;
 
+#if 1       // ======= Logic Events =======
+            case evtIdEndstopTop:    Logic.OnTopEndstop();    break;
+            case evtIdEndstopBottom: Logic.OnBottomEndstop(); break;
+            case evtIdEndstopTouch:  Logic.OnTouchEndstop();  break;
+            case evtIdBusyFlag:      Logic.OnBusyFlag();      break;
+            case evtIdDelayEnd:      Logic.OnDelayEnd();      break;
+#endif
+
 #if 1       // ======= USB =======
             case evtIdUsbConnect:
                 Printf("USB connect\r");
@@ -170,6 +311,7 @@ void ITask() {
     } // while true
 }
 
+#if 1 // ==== Small utils ====
 void ProcessChamberClosed(PinSnsState_t *PState, uint32_t Len) {
     if(*PState == pssRising) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdChamberClose));
     else if(*PState == pssFalling) EvtQMain.SendNowOrExit(EvtMsg_t(evtIdChamberOpen));
@@ -185,44 +327,32 @@ void ProcessUsbConnect(PinSnsState_t *PState, uint32_t Len) {
         EvtQMain.SendNowOrExit(EvtMsg_t(evtIdUsbDisconnect));
     }
 }
+#endif
 
-void Settings_t::Load() {
-    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Acceleration", &Settings.Acceleration);
-    if(Settings.Acceleration > 0xFFFF) Settings.Acceleration = 1200;
-
-    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Deceleration", &Settings.Deceleration);
-    if(Settings.Acceleration > 0xFFFF) Settings.Acceleration = 12000;
-
-    uint32_t tmp = 7;
-    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StepMode", &tmp);
-    if(tmp > 7) tmp = 7;
-    Settings.StepMode = (StepMode_t)tmp;
-
-    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Run", &Settings.Current4Run);
-    if(Settings.Current4Run > 0xFF) Settings.Current4Run = 18;
-    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Hold", &Settings.Current4Hold);
-    if(Settings.Current4Hold > 0xFF) Settings.Current4Hold = 18;
-
-    ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StartSpeed", &Settings.StartSpeed);
-    if(Settings.StartSpeed > 90000) Settings.Current4Hold = 90000;
-}
-
-// ======= Endstops =======
+#if 1 // ======= Endstops =======
 void TopEndstopHandler() {
+    Motor.SwitchLoHi(); // HardStop the motor using switch. Way faster than SPI cmd.
     PrintfI("%S\r", __FUNCTION__);
+    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstopTop));
 }
 
 void BottomEndstopHandler() {
+    if(Logic.State == lgsMovingDownFast) Motor.SwitchLoHi();
     PrintfI("%S\r", __FUNCTION__);
+    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstopBottom));
 }
 
 void TouchEndstopHandler() {
+    Motor.SwitchLoHi();
     PrintfI("%S\r", __FUNCTION__);
+    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdEndstopTouch));
 }
 
 void BusyPinHandler() {
     PrintfI("%S\r", __FUNCTION__);
+    EvtQMain.SendNowOrExitI(EvtMsg_t(evtIdBusyFlag));
 }
+#endif
 
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
@@ -251,13 +381,18 @@ void OnCmd(Shell_t *PShell) {
 #if 1 // ==== Motor control ====
     else if(PCmd->NameIs("MRst")) {
         Motor.Reset();
-        Motor.SetAcceleration(Settings.Acceleration);
-        Motor.SetDeceleration(Settings.Deceleration);
-        Motor.SetStepMode(Settings.StepMode);
+        Motor.SetAcceleration(Logic.Acceleration);
+        Motor.SetDeceleration(Logic.Deceleration);
+        Motor.SetStepMode(Logic.StepMode);
         // Current
-        Motor.SetCurrent4Run(Settings.Current4Run);
-        Motor.SetCurrent4Hold(Settings.Current4Hold);
+        Motor.SetCurrent4Run(Logic.Current4Run);
+        Motor.SetCurrent4Hold(Logic.Current4Hold);
         Motor.StopSoftAndHold();
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("Start")) {
+        Logic.Start();
         PShell->Ack(retvOk);
     }
 

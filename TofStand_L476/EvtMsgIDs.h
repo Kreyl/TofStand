@@ -20,6 +20,13 @@ enum EvtMsgId_t {
     evtIdUsbReady,
 
     evtIdButtons,
+
     evtIdChamberOpen,
     evtIdChamberClose,
+    evtIdEndstopTop,
+    evtIdEndstopBottom,
+    evtIdEndstopTouch,
+    evtIdBusyFlag,
+
+    evtIdDelayEnd,
 };
