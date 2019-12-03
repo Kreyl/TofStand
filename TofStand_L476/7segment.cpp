@@ -117,11 +117,11 @@ void SegmentShowT(uint32_t N) {
     SegmentShow(SHOW_t, SHOW_NONE, dig3, dig4);
 }
 
-void SegmentShowC() {
+void SegmentShowCAL() {
     IBuf[3] = SHOW_NONE;
-    IBuf[2] = SHOW_NONE;
-    IBuf[1] = SHOW_NONE;
-    IBuf[0] = CONVERT(57);
+    IBuf[2] = CONVERT(57);
+    IBuf[1] = CONVERT(119);
+    IBuf[0] = CONVERT(56);
     ShowBuf();
 }
 
@@ -149,11 +149,11 @@ void SegmentShowBad() {
     ShowBuf();
 }
 
-void SegmentShowOP() {
-    IBuf[3] = CONVERT(0);
-    IBuf[2] = CONVERT(0);
-    IBuf[1] = CONVERT(63);
-    IBuf[0] = CONVERT(115);
+void SegmentShowOPEn() {
+    IBuf[3] = CONVERT(63);
+    IBuf[2] = CONVERT(115);
+    IBuf[1] = CONVERT(121);
+    IBuf[0] = CONVERT(84);
     ShowBuf();
 }
 

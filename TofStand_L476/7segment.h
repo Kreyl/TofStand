@@ -19,10 +19,10 @@ void SegmentPutUint(uint32_t n, uint32_t base, uint8_t PointMsk=0);
 void SegmentClear();
 void SegmentShowT(uint32_t N);
 void SegmentShowT();
-void SegmentShowC();
+void SegmentShowCAL();
 void SegmentShowGood();
 void SegmentShowBad();
 
-void SegmentShowOP();
+void SegmentShowOPEn();
 
 void SegmentShowPoints(uint8_t PointMsk);

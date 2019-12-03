@@ -99,7 +99,7 @@ private:
     void IGoToTouch() {
         State = lgsGoingToTouch;
         WaitBusy = false;
-        SegmentShowC();
+        SegmentShowCAL();
         Motor.Run(dirDOWN, SpeedDownFast);
     }
 
@@ -291,7 +291,7 @@ int main(void) {
 
     chThdSleepMilliseconds(720); // Let power to stabilize
     Logic.GoTop();
-    if(!ChamberIsClosed()) SegmentShowOP();
+    if(!ChamberIsClosed()) SegmentShowOPEn();
 
     // ==== Main cycle ====
     ITask();
@@ -331,7 +331,7 @@ void ITask() {
 
             case evtIdChamberOpen:
                 Motor.StopSoftAndHiZ();
-                SegmentShowOP();
+                SegmentShowOPEn();
                 break;
             case evtIdChamberClose: SegmentClear();  break;
 
