@@ -7,6 +7,7 @@
 
 #include "L6470.h"
 #include "uart.h"
+#include "kl_lib.h"
 
 void L6470_t::Init() {
     // Aux pins
@@ -21,12 +22,12 @@ void L6470_t::Init() {
     // SPI pins
     PinSetupOut      (M_SPI_GPIO, M_CS,   omPushPull);
     PinSetupAlterFunc(M_SPI_GPIO, M_SCK,  omPushPull, pudNone, M_SPI_AF);
-    PinSetupAlterFunc(M_SPI_GPIO, M_MISO, omPushPull, pudNone, M_SPI_AF);
+    PinSetupAlterFunc(M_SPI_GPIO, M_MISO, omPushPull, pudPullUp, M_SPI_AF);
     PinSetupAlterFunc(M_SPI_GPIO, M_MOSI, omPushPull, pudNone, M_SPI_AF);
     CsHi();
     // ==== SPI ==== MSB first, master, ClkLowIdle, FirstEdge, Baudrate=5MHz
 #if L6470_INVERT
-    ISpi.Setup(boMSB, cpolIdleHigh, cphaFirstEdge, 5000000);
+    ISpi.Setup(boMSB, cpolIdleHigh, cphaFirstEdge, 500000);
 #else
     ISpi.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 5000000);
 #endif
@@ -74,6 +75,7 @@ void L6470_t::Run(Dir_t Dir, uint32_t Speed) {
 }
 
 void L6470_t::Move(Dir_t Dir, uint32_t Speed, uint32_t Steps) {
+    PrintfI("%S: Dir %u; Spd %u; Steps %u\r", __FUNCTION__, Dir, Speed, Steps);
     uint8_t b = 0;
     switch(Dir) {
         case dirStop:
@@ -105,6 +107,11 @@ void L6470_t::Move(Dir_t Dir, uint32_t Speed, uint32_t Steps) {
     WriteByte(dwb.b[0]);
     CsHi();
     chSysUnlock();
+}
+
+bool L6470_t::IsStopped() {
+    uint32_t Status = GetStatus();
+    return !(Status & (0b11UL << 5));
 }
 #endif
 
@@ -210,7 +217,8 @@ void L6470_t::ResetOff() { PinSetLo(M_AUX_GPIO, M_STBY_RST); }
 bool L6470_t::IsBusy()   { return PinIsHi(M_AUX_GPIO, M_BUSY_SYNC1); }
 bool L6470_t::IsFlagOn() { return PinIsHi(M_AUX_GPIO, M_FLAG1); }
 
-void L6470_t::SwitchLoHi() {
+void L6470_t::StopNow() {
+    // Switch switch lo and back hi
     PinSetHi(M_AUX_GPIO, M_SW1);
     L6470_CS_DELAY();
     PinSetLo(M_AUX_GPIO, M_SW1);

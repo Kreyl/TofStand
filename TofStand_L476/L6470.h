@@ -25,7 +25,7 @@
 #define L6470_REG_STATUS        0x19
 
 // Values
-#define SPD_MAX                 63000
+#define SPD_MAX                 40005
 #define SPD_MAX_SMALL           (SPD_MAX_SMALL / 1024) // For some reason, there are two definitions of speed
 
 #endif
@@ -63,10 +63,11 @@ public:
     // Motion
     void Run(Dir_t Dir, uint32_t Speed);
     void Move(Dir_t Dir, uint32_t Speed, uint32_t Steps);
-    void SwitchLoHi();
+    bool IsStopped();
     // Stop
     void StopSoftAndHold() { Cmd(0b10110000); } // SoftStop
     void StopSoftAndHiZ()  { Cmd(0b10100000); } // SoftHiZ
+    void StopNow(); // HardStop the motor using switch. Way faster than SPI cmd.
     // Mode of operation
     void SetMaxSpeed(uint32_t MaxSpd) { SetParam16(L6470_REG_MAX_SPEED, MaxSpd); }
     void SetConfig(uint16_t Cfg) { SetParam16(L6470_REG_CONFIG, Cfg); }
@@ -77,4 +78,5 @@ public:
     void SetCurrent4Run(uint8_t KVal)  { SetParam8(0x0A, KVal); }
     void SetCurrent4Acc(uint8_t KVal)  { SetParam8(0x0B, KVal); }
     void SetCurrent4Dec(uint8_t KVal)  { SetParam8(0x0C, KVal); }
+    void SetStallThreshold(uint8_t AValue)  { SetParam8(0x14, AValue); }
 };

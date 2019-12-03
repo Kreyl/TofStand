@@ -11,6 +11,7 @@
 
 #if 1 // ============================ Char Gen =================================
 #define DIGIT_CNT   4
+#define CONVERT(Input)  (0xFF ^ Input)
 
 static const uint8_t Char1Gen[10] = { // Digits
         192, // 0
@@ -101,6 +102,14 @@ void SegmentPutUint(uint32_t n, uint32_t base, uint8_t PointMsk) {
 }
 
 
+void SegmentClear() {
+    IBuf[3] = SHOW_NONE;
+    IBuf[2] = SHOW_NONE;
+    IBuf[1] = SHOW_NONE;
+    IBuf[0] = SHOW_NONE;
+    ShowBuf();
+}
+
 void SegmentShowT(uint32_t N) {
     uint8_t dig4 = N % 10;
     N /= 10;
@@ -108,6 +117,21 @@ void SegmentShowT(uint32_t N) {
     SegmentShow(SHOW_t, SHOW_NONE, dig3, dig4);
 }
 
+void SegmentShowC() {
+    IBuf[3] = SHOW_NONE;
+    IBuf[2] = SHOW_NONE;
+    IBuf[1] = SHOW_NONE;
+    IBuf[0] = CONVERT(57);
+    ShowBuf();
+}
+
+void SegmentShowT() {
+    IBuf[3] = SHOW_NONE;
+    IBuf[2] = SHOW_NONE;
+    IBuf[1] = SHOW_NONE;
+    IBuf[0] = CONVERT(SHOW_t);
+    ShowBuf();
+}
 
 void SegmentShowGood() {
     IBuf[3] = 167;
@@ -122,6 +146,14 @@ void SegmentShowBad() {
     IBuf[2] = 241;
     IBuf[1] = 189;
     IBuf[0] = 233;
+    ShowBuf();
+}
+
+void SegmentShowOP() {
+    IBuf[3] = CONVERT(0);
+    IBuf[2] = CONVERT(0);
+    IBuf[1] = CONVERT(63);
+    IBuf[0] = CONVERT(115);
     ShowBuf();
 }
 

@@ -32,7 +32,7 @@ const PinSns_t PinSns[] = {
         {BTN_DOWN_PIN, ProcessButtons},
         {BTN_FAST_PIN, ProcessButtons},
         // Chamber closed
-        {CHAMBER_CLOSED_PIN, ProcessChamberClosed},
+        {CHAMBER_CLOSED_PIN, pudPullDown, ProcessChamberClosed},
         // USB
         {USB_DETECT_PIN, ProcessUsbConnect},
 };

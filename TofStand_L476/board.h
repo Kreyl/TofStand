@@ -54,7 +54,7 @@
 #define BTN_FAST_PIN    GPIOB, 2, pudPullDown
 
 // Sensors
-#define CHAMBER_CLOSED_PIN  GPIOB, 10, pudPullUp
+#define CHAMBER_CLOSED_PIN  GPIOB, 10
 #define USB_DETECT_PIN  GPIOA, 9, pudPullDown
 
 // 7 segment
@@ -65,8 +65,8 @@
 #define SEG_DRV_OE      GPIOB, 14
 
 // Endstops
-#define ENDSTOP_TOP     GPIOA, 0
-#define ENDSTOP_BOTTOM  GPIOA, 1
+#define ENDSTOP_TOP     GPIOA, 1
+#define ENDSTOP_BOTTOM  GPIOA, 0
 #define ENDSTOP_TOUCH   GPIOA, 2
 
 #if 1 // ==== L6470 ====
