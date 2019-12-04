@@ -123,7 +123,6 @@ int32_t L6470_t::GetAbsPos() {
 }
 void L6470_t::ResetAbsPos() {
     Cmd(0b11011000);
-//    SetParam24(0x01, 0);
 }
 #endif
 
