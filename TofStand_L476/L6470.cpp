@@ -27,7 +27,7 @@ void L6470_t::Init() {
     CsHi();
     // ==== SPI ==== MSB first, master, ClkLowIdle, FirstEdge, Baudrate=5MHz
 #if L6470_INVERT
-    ISpi.Setup(boMSB, cpolIdleHigh, cphaFirstEdge, 500000);
+    ISpi.Setup(boMSB, cpolIdleLow, cphaSecondEdge, 500000);
 #else
     ISpi.Setup(boMSB, cpolIdleLow, cphaFirstEdge, 5000000);
 #endif
@@ -113,6 +113,18 @@ bool L6470_t::IsStopped() {
     uint32_t Status = GetStatus();
     return !(Status & (0b11UL << 5));
 }
+
+int32_t L6470_t::GetAbsPos() {
+    int32_t rslt = GetParam32(0x01);
+    if(rslt & (1UL << 21)) {
+        rslt |= 0xFFC00000;
+    }
+    return rslt;
+}
+void L6470_t::ResetAbsPos() {
+    Cmd(0b11011000);
+//    SetParam24(0x01, 0);
+}
 #endif
 
 
@@ -176,6 +188,18 @@ uint32_t L6470_t::GetParam32(uint8_t Addr) {
     return (v1 << 16) | (v2 << 8) | (v3 << 0);
 }
 
+void L6470_t::SetParam24(uint8_t Addr, uint32_t Value) {
+    CsLo();
+    WriteByte(Addr);
+    CSHiLo();
+    WriteByte(0xFF & (Value >> 16)); // MSB
+    CSHiLo();
+    WriteByte(0xFF & (Value >> 8));
+    CSHiLo();
+    WriteByte(0xFF & (Value >> 0)); // LSB
+    CsHi();
+}
+
 uint16_t L6470_t::GetStatus() {
     uint16_t rslt;
     CsLo();
@@ -206,7 +230,7 @@ void L6470_t::WriteByte(uint8_t b) {
 }
 
 uint8_t L6470_t::ReadByte() {
-    uint8_t b = ISpi.ReadWriteByte(0);
+    uint8_t b = ISpi.ReadWriteByte(0xFF);
     b ^= 0xFF;
     return b;
 }

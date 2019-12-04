@@ -60,10 +60,13 @@ public:
     uint32_t GetParam32(uint8_t Addr);
     void SetParam8(uint8_t Addr, uint8_t Value);
     void SetParam16(uint8_t Addr, uint16_t Value);
+    void SetParam24(uint8_t Addr, uint32_t Value);
     // Motion
     void Run(Dir_t Dir, uint32_t Speed);
     void Move(Dir_t Dir, uint32_t Speed, uint32_t Steps);
     bool IsStopped();
+    int32_t GetAbsPos();
+    void ResetAbsPos();
     // Stop
     void StopSoftAndHold() { Cmd(0b10110000); } // SoftStop
     void StopSoftAndHiZ()  { Cmd(0b10100000); } // SoftHiZ

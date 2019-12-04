@@ -27,7 +27,7 @@ static const uint8_t Char1Gen[10] = { // Digits
 };
 
 #define SHOW_NONE   0xFF
-#define SHOW_t      135
+#define SHOW_t      120
 #define SHOW_POINT  0x7F
 
 #endif

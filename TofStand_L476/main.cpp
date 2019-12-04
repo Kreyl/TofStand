@@ -37,7 +37,11 @@ L6470_t Motor{M_SPI};
 // Distance
 #define STEPS_PER_MM        1280 // Experimental
 #define MM2STEPS(mm)        ((mm) * STEPS_PER_MM)
+#define STEPS2MM(steps)     ((steps) / STEPS_PER_MM)
 #define DIST_BOTTOM2STOP_mm 18
+
+static TmrKL_t TmrHeight {TIME_MS2I(450), evtIdHeightMeasure, tktPeriodic};
+static int32_t Height;
 
 void TopEndstopHandler();
 void BottomEndstopHandler();
@@ -75,7 +79,7 @@ static HTS_t Steps[] = {
         {sttWait, 2700},
         {sttMoveTo, {100, STEP_SPD}},
         {sttWait, 2700},
-        {sttMoveTo, {540, STEP_SPD}},
+        {sttMoveTo, {600, STEP_SPD}},
         {sttEnd},
 };
 #define STEP_CNT    countof(Steps)
@@ -96,16 +100,9 @@ private:
     }
     TmrKL_t ITmr {TIME_MS2I(999), evtIdDelayEnd, tktOneShot};
     void IWait(uint32_t Delay_ms) { ITmr.StartOrRestart(TIME_MS2I(Delay_ms)); }
-    void IGoToTouch() {
-        State = lgsGoingToTouch;
-        WaitBusy = false;
-        SegmentShowCAL();
-        Motor.Run(dirDOWN, SpeedDownFast);
-    }
 
     void ProcessStep() {
         PrintfI("%S %u; Y %u\r", __FUNCTION__, StepN, Y);
-        SegmentPutUint(StepN, 10);
         switch(Steps[StepN].Task) {
             case sttMoveTo:
                 if(Steps[StepN].Height_mm > Y) Motor.Move(dirUP, Steps[StepN].Speed, MM2STEPS(Steps[StepN].Height_mm - Y));
@@ -140,15 +137,22 @@ public:
         Motor.SetDeceleration(Deceleration);
         Motor.SetStepMode(StepMode);
         Motor.SetCurrent4Run(Current4Run);
+        Motor.SetCurrent4Acc(Current4Run);
+        Motor.SetCurrent4Dec(Current4Run);
         Motor.SetCurrent4Hold(Current4Hold);
         Motor.SetStallThreshold(StallThreshold);
         Motor.StopSoftAndHold();
     }
 
     void GoTop() {
-        SegmentShowT();
         if(EndstopTop.IsHi()) State = lgsIdleTop;
         else Motor.Run(dirUP, SpeedUpFast);
+    }
+
+    void GoToTouch() {
+        State = lgsGoingToTouch;
+        WaitBusy = false;
+        Motor.Run(dirDOWN, SpeedDownFast);
     }
 
     void LoadSettings() {
@@ -181,7 +185,7 @@ public:
     void Start() {
         Motor.StopSoftAndHiZ();
         if(!ChamberIsClosed()) return;
-        if(State == lgsIdleTop) IGoToTouch(); // Touch the station
+        if(State == lgsIdleTop) GoToTouch(); // Touch the station
         else {
             State = lgsGoingTop;
             GoTop();
@@ -190,7 +194,7 @@ public:
 
     // Events
     void OnTopEndstop() {
-        if(ChamberIsClosed() and State == lgsGoingTop) IGoToTouch();
+        if(ChamberIsClosed() and State == lgsGoingTop) GoToTouch();
         else State = lgsIdleTop;
     }
 
@@ -201,6 +205,7 @@ public:
     }
 
     void OnTouchEndstop() {
+        Motor.ResetAbsPos();
         if(State == lgsGoingToTouch) { // Start testing
             State = lgsProceedingTest;
             IPrint("Height 0\r\n");
@@ -274,6 +279,8 @@ int main(void) {
 
     UsbMsdCdc.Init();
 
+    chThdSleepMilliseconds(720); // Let power to stabilize
+
     // Motor
     Motor.Init();
     Logic.MotorSetup();
@@ -289,9 +296,9 @@ int main(void) {
     BusyPin.Init(ttFalling);
     BusyPin.EnableIrq(IRQ_PRIO_MEDIUM);
 
-    chThdSleepMilliseconds(720); // Let power to stabilize
     Logic.GoTop();
     if(!ChamberIsClosed()) SegmentShowOPEn();
+    TmrHeight.StartOrRestart();
 
     // ==== Main cycle ====
     ITask();
@@ -334,6 +341,17 @@ void ITask() {
                 SegmentShowOPEn();
                 break;
             case evtIdChamberClose: SegmentClear();  break;
+
+            case evtIdHeightMeasure: {
+                Height = Motor.GetAbsPos();
+//                Printf("%d\r", STEPS2MM(Height));
+//                Printf("%d\r", Height);
+                if(ChamberIsClosed()) {
+                    Height = STEPS2MM(Height);
+                    if(Height < 0 or Height > 700) SegmentClear();
+                    else SegmentPutUint(Height, 10);
+                }
+            } break;
 
 #if 1       // ======= Logic Events =======
             case evtIdEndstopTop:    Logic.OnTopEndstop();    break;
@@ -434,8 +452,18 @@ void OnCmd(Shell_t *PShell) {
         PShell->Ack(retvOk);
     }
 
+    else if(PCmd->NameIs("RstAbs")) {
+        Motor.ResetAbsPos();
+        PShell->Ack(retvOk);
+    }
+
     else if(PCmd->NameIs("Start")) {
         Logic.Start();
+        PShell->Ack(retvOk);
+    }
+
+    else if(PCmd->NameIs("Touch")) {
+        Logic.GoToTouch();
         PShell->Ack(retvOk);
     }
 
@@ -460,7 +488,7 @@ void OnCmd(Shell_t *PShell) {
         PCmd->GetNext<uint32_t>(&ISteps); // May absent
         if(ISteps == 0)    { PShell->Ack(retvBadValue); return; }
         if(ISpd == 0)      { PShell->Ack(retvBadValue); return; }
-        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
+//        if(ISpd > SPD_MAX) { PShell->Ack(retvBadValue); return; }
         Motor.Move(dirForward, ISpd, ISteps);
         PShell->Ack(retvOk);
     }
@@ -527,6 +555,14 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
         if(PCmd->GetNext<uint32_t>(&Value) != retvOk) { PShell->Ack(retvCmdError); return; }
         Motor.SetParam16(Addr, Value);
+        PShell->Ack(retvOk);
+    }
+    else if(PCmd->NameIs("Set24")) {
+        uint8_t Addr = 0;
+        uint32_t Value;
+        if(PCmd->GetNext<uint8_t>(&Addr) != retvOk) { PShell->Ack(retvCmdError); return; }
+        if(PCmd->GetNext<uint32_t>(&Value) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Motor.SetParam24(Addr, Value);
         PShell->Ack(retvOk);
     }
 #endif

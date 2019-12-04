@@ -28,5 +28,6 @@ enum EvtMsgId_t {
     evtIdEndstopTouch,
     evtIdBusyFlag,
 
+    evtIdHeightMeasure,
     evtIdDelayEnd,
 };
