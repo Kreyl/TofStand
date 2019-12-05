@@ -75,7 +75,7 @@ void L6470_t::Run(Dir_t Dir, uint32_t Speed) {
 }
 
 void L6470_t::Move(Dir_t Dir, uint32_t Speed, uint32_t Steps) {
-    PrintfI("%S: Dir %u; Spd %u; Steps %u\r", __FUNCTION__, Dir, Speed, Steps);
+//    PrintfI("%S: Dir %u; Spd %u; Steps %u\r", __FUNCTION__, Dir, Speed, Steps);
     uint8_t b = 0;
     switch(Dir) {
         case dirStop:

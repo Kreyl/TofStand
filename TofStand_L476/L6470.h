@@ -66,6 +66,7 @@ public:
     void Move(Dir_t Dir, uint32_t Speed, uint32_t Steps);
     bool IsStopped();
     int32_t GetAbsPos();
+    void SetAbsPos(int32_t APos) { SetParam24(0x01, APos); }
     void ResetAbsPos();
     // Stop
     void StopSoftAndHold() { Cmd(0b10110000); } // SoftStop

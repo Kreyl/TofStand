@@ -258,7 +258,7 @@ uint8_t ReadString(const char *AFileName, const char *ASection, const char *AKey
     len = strlen(AKey);
     do {
         if(!f_gets(IStr, SD_STRING_SZ, &CommonFile) or *(StartP = skipleading(IStr)) == '[') {
-            Printf("iniNoKey\r");
+            Printf("iniNoKey %S\r", AKey);
             f_close(&CommonFile);
             return retvFail;
         }

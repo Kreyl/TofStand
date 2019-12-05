@@ -27,12 +27,12 @@ L6470_t Motor{M_SPI};
 #define dirUP               dirForward
 #define dirDOWN             dirReverse
 #define STAND_HEIGHT_mm     625
+#define TOP_ES_H_mm         623 // Put this when top EP touched
 #define ACCELERATION        135
 #define CURRENT4RUN         99
 #define CURRENT4HOLD        18
 #define RUN_SPEED_HIGH      40000
-#define BTN_RUN_SPEED_HIGH  40000
-#define BTN_RUN_SPEED_LOW   9000
+#define RUN_SPEED_SLOW      9000
 
 // Distance
 #define STEPS_PER_MM        1280 // Experimental
@@ -90,10 +90,8 @@ public:
     uint32_t Acceleration = ACCELERATION, Deceleration = ACCELERATION;
     StepMode_t StepMode = sm128;
     uint32_t Current4Run = CURRENT4RUN, Current4Hold = CURRENT4HOLD;
-    uint32_t SpeedUpFast = RUN_SPEED_HIGH;
-    uint32_t SpeedDownFast = RUN_SPEED_HIGH;
-    uint32_t SpeedDownSlow = 9000;
-    uint32_t StallThreshold = 95; // 3A; default is 64 => 2A
+    uint32_t SpeedFast = RUN_SPEED_HIGH;
+    uint32_t SpeedSlow = RUN_SPEED_SLOW;
 
     void MotorSetup() {
         Motor.Reset();
@@ -104,7 +102,7 @@ public:
         Motor.SetCurrent4Acc(Current4Run);
         Motor.SetCurrent4Dec(Current4Run);
         Motor.SetCurrent4Hold(Current4Hold);
-        Motor.SetStallThreshold(StallThreshold);
+        Motor.SetStallThreshold(95); // 3A; default is 64 => 2A
         Motor.StopSoftAndHold();
     }
 
@@ -112,22 +110,21 @@ public:
         if(EndstopTop.IsHi()) State = lgsIdle;
         else {
             State = lgsGoingUp;
-            Motor.Run(dirUP, SpeedUpFast);
+            Motor.Run(dirUP, SpeedFast);
         }
     }
 
     void GoToTouch() {
         State = lgsGoingDown;
         WaitBusy = false;
-        Motor.Run(dirDOWN, SpeedDownFast);
+        Motor.Run(dirDOWN, SpeedFast);
     }
 
     void LoadSettings() {
         ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Acceleration", &Acceleration);
-        if(Acceleration > 0xFFFF) Acceleration = 1200;
-
-        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Deceleration", &Deceleration);
         if(Acceleration > 0xFFFF) Acceleration = 12000;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Deceleration", &Deceleration);
+        if(Deceleration > 0xFFFF) Deceleration = 12000;
 
         uint32_t tmp = 7;
         ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "StepMode", &tmp);
@@ -135,24 +132,25 @@ public:
         StepMode = (StepMode_t)tmp;
 
         ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Run", &Current4Run);
-        if(Current4Run > 0xFF) Current4Run = 18;
+        if(Current4Run > 255) Current4Run = 255;
         ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "Current4Hold", &Current4Hold);
-        if(Current4Hold > 0xFF) Current4Hold = 18;
+        if(Current4Hold > 255) Current4Hold = 255;
 
-        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedUpFast", &SpeedUpFast);
-        if(SpeedUpFast > 90000) SpeedUpFast = 90000;
-        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedDownFast", &SpeedDownFast);
-        if(SpeedDownFast > 90000) SpeedDownFast = 90000;
-        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedUpFast", &SpeedDownSlow);
-        if(SpeedDownSlow > 90000) SpeedDownSlow = 90000;
-//        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedUpFast", &SpeedUp0);
-//        if(SpeedUp0 > 90000) SpeedUp0 = 90000;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedFast", &SpeedFast);
+        if(SpeedFast > RUN_SPEED_HIGH) SpeedFast = RUN_SPEED_HIGH;
+        ini::Read<uint32_t>(SETTINGS_FNAME, "Motor", "SpeedSlow", &SpeedSlow);
+        if(SpeedSlow > RUN_SPEED_HIGH) SpeedSlow = RUN_SPEED_HIGH;
     }
 
-    // ==== Events ====
+#if 1  // ==== Events ====
     void OnTopEndstop() {
         State = lgsIdle;
         WaitBusy = false;
+        // Set top value just in case
+        if(!Calibrated) {
+            Motor.SetAbsPos(MM2STEPS(TOP_ES_H_mm));
+            Calibrated = true;
+        }
         PrintHeightIfRelevant();
     }
 
@@ -160,7 +158,7 @@ public:
         if(State == lgsGoingDown) {
             State = lgsGoingToTouch;
             WaitBusy = true;
-            Motor.Move(dirDOWN, SpeedDownSlow, MM2STEPS(DIST_BOTTOM2STOP_mm));
+            Motor.Move(dirDOWN, SpeedSlow, MM2STEPS(DIST_BOTTOM2STOP_mm));
         }
     }
 
@@ -195,9 +193,9 @@ public:
     void OnChamberClose() {
         SegmentClear();
     }
+#endif
 } Logic;
 #endif
-
 
 int main(void) {
     // Start Watchdog. Will reset in main thread by periodic 1 sec events.
@@ -238,9 +236,7 @@ int main(void) {
     // Init filesystem
     FRESULT err;
     err = f_mount(&FlashFS, "", 0);
-    if(err == FR_OK) {
-        //Logic.LoadSettings();
-    }
+    if(err == FR_OK) Logic.LoadSettings();
     else Printf("FS error\r");
 
     UsbMsdCdc.Init();
@@ -253,6 +249,7 @@ int main(void) {
 
     // Endstops
     EndstopTop.Init(ttRising);
+    if(EndstopTop.IsHi()) Logic.OnTopEndstop();
     EndstopBottom.Init(ttRising);
     EndstopTouch.Init(ttRising);
     EndstopTop.EnableIrq(IRQ_PRIO_MEDIUM);
@@ -287,7 +284,7 @@ void ITask() {
                 uint32_t Speed;
                 switch(Msg.BtnEvtInfo.BtnID) {
                     case 0: // Up
-                        Speed = (GetBtnState(2) == BTN_HOLDDOWN_STATE)? BTN_RUN_SPEED_HIGH : BTN_RUN_SPEED_LOW;
+                        Speed = (GetBtnState(2) == BTN_HOLDDOWN_STATE)? Logic.SpeedFast : Logic.SpeedSlow;
                         if(Msg.BtnEvtInfo.Type == beShortPress) {
                             if(EndstopTop.IsHi()) Logic.State = lgsIdle;
                             else {
@@ -297,7 +294,7 @@ void ITask() {
                         }
                         break;
                     case 1: // Down
-                        Speed = (GetBtnState(2) == BTN_HOLDDOWN_STATE)? BTN_RUN_SPEED_HIGH : BTN_RUN_SPEED_LOW;
+                        Speed = (GetBtnState(2) == BTN_HOLDDOWN_STATE)? Logic.SpeedFast : Logic.SpeedSlow;
                         if(Msg.BtnEvtInfo.Type == beShortPress) {
                             if(EndstopTouch.IsHi()) Logic.State = lgsTouching;
                             else {
@@ -307,7 +304,7 @@ void ITask() {
                         }
                         break;
                     case 2: // Move Fast
-                        Speed = (Msg.BtnEvtInfo.Type == beShortPress)? BTN_RUN_SPEED_HIGH : BTN_RUN_SPEED_LOW;
+                        Speed = (Msg.BtnEvtInfo.Type == beShortPress)? Logic.SpeedFast : Logic.SpeedSlow;
                         if(GetBtnState(0) == BTN_HOLDDOWN_STATE) {
                             if(EndstopTop.IsHi()) Logic.State = lgsIdle;
                             else {
