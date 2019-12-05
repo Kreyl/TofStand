@@ -56,8 +56,8 @@ DRESULT disk_read (
 
 /*-----------------------------------------------------------------------*/
 /* Write Sector(s)                                                       */
-void ErasePage(uint32_t PageAddr);
-void WriteToMemory(uint32_t *PAddr, uint32_t *PBuf, uint32_t ALen);
+void ErasePage(uint32_t Addr);
+void WriteToMemory(uint32_t Addr, uint32_t *PBuf, uint32_t Len);
 
 static uint32_t IBuf[(BLOCK_SZ / sizeof(uint32_t))];
 
@@ -74,8 +74,9 @@ DRESULT disk_write (
     while(count > 0) {
         ErasePage(Addr);
         memcpy(IBuf, buff, BLOCK_SZ);
-        WriteToMemory(&Addr, IBuf, BLOCK_SZ);
+        WriteToMemory(Addr, IBuf, BLOCK_SZ);
         buff += BLOCK_SZ;
+        Addr += BLOCK_SZ;
         count--;
     }
     return RES_OK;

@@ -132,7 +132,7 @@ int main(void) {
     chThdSleepMilliseconds(99);
     f_close(&CommonFile);
     // Remove firmware file
-//    f_unlink(FileInfo.fname);
+    f_unlink(FileInfo.fname);
 //    Iwdg::Reload();
     chSysLock();
     Flash::LockFlash();
